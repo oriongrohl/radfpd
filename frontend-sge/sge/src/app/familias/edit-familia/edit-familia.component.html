@@ -14,6 +14,13 @@
                 <textarea matInput placeholder="Observaciones" formControlName="observaciones" name="Observaciones"></textarea>
             </mat-form-field>
         </div>
+        
+        <!-- adding cod_familia -->
+        <div class="form">
+            <mat-form-field color="accent">
+                <textarea matInput placeholder="Codigo familia" formControlName="cod_familia" name="Codigo familia"></textarea>
+            </mat-form-field>
+        </div>
 
         <div mat-dialog-actions>
             <button mat-button id="onSubmit" type="submit" [disabled]="!familiaForm.valid" (click)="confirmEdit()">Guardar</button>
