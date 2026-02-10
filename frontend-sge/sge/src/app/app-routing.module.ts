@@ -71,6 +71,8 @@ const routes: Routes = [
 //  { path: 'unidades', loadChildren: () => import('./entidades/datos-entidad/unidades/unidades.module').then(m => m.UnidadesModule) },
   { path: 'motivos-nodual', loadChildren: () => import('./motivos-nodual/motivos-nodual.module').then(m => m.MotivosNodualModule) },
   { path: 'unidades', loadChildren: () => import('./unidades/unidades.module').then(m => m.UnidadesModule) },
+  { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule) },
+  { path: 'vacantes', loadChildren: () => import('./vacantes/vacantes.module').then(m => m.VacantesModule) },
 //  { path: 'ciclos-entidad', loadChildren: () => import('./entidades/datos-entidad/ciclos-entidad/ciclos-entidad.module').then(m => m.CiclosEntidadModule) },
 //  { path: 'contactos-entidad', loadChildren: () => import('./entidades/datos-entidad/contactos-entidad/contactos-entidad.module').then(m => m.ContactosEntidadModule) },
 //  { path: 'datos-basicos-entidad', loadChildren: () => import('./entidades/datos-entidad/datos-basicos-entidad/datos-basicos-entidad.module').then(m => m.DatosBasicosEntidadModule) },
@@ -79,6 +81,17 @@ const routes: Routes = [
   {
     path: '**',
     loadChildren: () => import('./home/home.module').then(m => m.HomeModule)
+  },
+  // AÑADIR RUTAS 
+  { 
+    path: 'alumnos', 
+    loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule),
+    canActivate: [AuthGuard] 
+  },
+  { 
+    path: 'vacantes', 
+    loadChildren: () => import('./vacantes/vacantes.module').then(m => m.VacantesModule),
+    canActivate: [AuthGuard] 
   },
 ];
 
