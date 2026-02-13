@@ -36,6 +36,7 @@ export class NavbarComponent implements OnInit {
     const RESPONSE = await this.menuService.getMenu().toPromise();
     this.menu = RESPONSE.data;
 
+    // START AÑADIDO
     // --- INYECTAR MIS BOTONES A MANO ---
     const misOpciones = {
       grupo: 'Gestión FCT',
@@ -54,8 +55,8 @@ export class NavbarComponent implements OnInit {
     };
 
     // Añadimos nuestro grupo al principio o al final del menú
-    this.menu.push(misOpciones); 
-    // -----------------------------------
+    this.menu.push(misOpciones);
+    // END AÑADIDO
   }
 
   almacenarGrupo(grupo) {

@@ -16,15 +16,15 @@ export class AlumnosService {
     constructor(private http: HttpClient, private commonService: CommonService) { }
 
     getAlumnos(): Observable<any> {
-    // Usamos MI_API_LOCAL en lugar de URL_API
+    // Usamos MI_API_LOCAL en lugar de URL_API q es la URL en la que se ejecuta el backend python INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     return this.http.get(`${this.MI_API_LOCAL}/${this.ENDPOINT}`, { headers: this.commonService.headers });
     }
 
     addAlumno(alumno: any): Observable<any> {
-        return this.http.post(`${URL_API}/${this.ENDPOINT}`, alumno, { headers: this.commonService.headers });
+        return this.http.post(`${this.MI_API_LOCAL}/${this.ENDPOINT}`, alumno, { headers: this.commonService.headers });
     }
 
     deleteAlumno(id: number): Observable<any> {
-        return this.http.delete(`${URL_API}/${this.ENDPOINT}/${id}`, { headers: this.commonService.headers });
+        return this.http.delete(`${this.MI_API_LOCAL}/${this.ENDPOINT}/${id}`, { headers: this.commonService.headers });
     }
 }

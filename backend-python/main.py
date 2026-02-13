@@ -14,6 +14,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    
 )
 # --- SEGURIDAD: Validación de Token ---
 def verificar_token(authorization: str = Header(None)):

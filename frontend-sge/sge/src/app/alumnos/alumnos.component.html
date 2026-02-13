@@ -1,7 +1,41 @@
-<h2>Listado de Alumnos</h2>
+<h2>Añadir Alumno</h2>
+<form action=""></form>
+
+<!-- Añadir alumnos -->
+<div class="card p-3 mb-4">
+    <h4>Nuevo Alumno (Rápido)</h4>
+    
+    <div class="row">
+        <div class="col">
+            <input #nombreInput type="text" class="form-control" placeholder="Nombre">
+        </div>
+        <div class="col">
+            <input #apellidosInput type="text" class="form-control" placeholder="Apellidos">
+        </div>
+        <div class="col">
+            <input #nifInput type="text" class="form-control" placeholder="NIF/NIE">
+        </div>
+        <div class="col">
+            <button class="btn btn-primary" 
+                (click)="agregarAlumno(nombreInput.value, apellidosInput.value, nifInput.value)">
+                Añadir
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
+
 <ul>
     <li *ngFor="let a of alumnos">
         <p>prueba</p>
         {{ a.nombre }} {{ a.apellidos }} - {{ a.centro_nombre }}
+        id: {{a.id_alumno}}
+        <button (click)="borrarAlumno(a.id_alumno)">Borrar</button>
     </li>
 </ul>
+
+<div>
+    
+</div>

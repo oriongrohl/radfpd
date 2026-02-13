@@ -27,7 +27,7 @@ class Alumno(Base):
     apellidos = Column(String(50), nullable=False)
     fecha_nacimiento = Column(Date, nullable=False)
     id_entidad = Column(Integer, ForeignKey("sgi_entidades.id_entidad"), nullable=False)
-    id_ciclo = Column(Integer, ForeignKey("sgi_ciclos.id_ciclos"), nullable=False)
+    id_ciclo = Column(Integer, ForeignKey("sgi_ciclos.id_ciclo"), nullable=False)
     curso = Column(Integer, nullable=False)
     telefono = Column(String(15), nullable=False)
     direccion = Column(String(50))
@@ -46,9 +46,10 @@ class Vacante(Base):
     __tablename__ = "sgi_vacantes"
     id_vacante = Column(Integer, primary_key=True, autoincrement=True)
     id_entidad = Column(Integer, ForeignKey("sgi_entidades.id_entidad"), nullable=False)
-    id_ciclo = Column(Integer, ForeignKey("sgi_ciclos.id_ciclos"), nullable=False) # <- Corregido a id_ciclo
+    id_ciclos = Column(Integer, ForeignKey("sgi_ciclos.id_ciclo"), nullable=False) # <- Corregido a id_ciclo
     curso = Column(Integer, nullable=False)
     num_plazas = Column(Integer, default=1)
+    num_vacantes = Column(Integer, default=0)
     observaciones = Column(Text)
 
     __table_args__ = (UniqueConstraint('id_entidad', 'id_ciclos', 'curso', name='_entidad_ciclo_curso_uc'),)
@@ -63,3 +64,4 @@ class VacanteAlumno(Base):
     id_vacante_x_alumno = Column(Integer, primary_key=True, autoincrement=True)
     id_vacante = Column(Integer, ForeignKey("sgi_vacantes.id_vacante"), nullable=False)
     id_alumno = Column(Integer, ForeignKey("sgi_alumno.id_alumno"), nullable=False, unique=True)
+

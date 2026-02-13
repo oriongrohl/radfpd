@@ -38,10 +38,10 @@ DROP TABLE if exists `sgi_vacantes`;
 CREATE TABLE `sgi_vacantes` (
   `id_vacante` int(11) NOT NULL AUTO_INCREMENT,
   `id_entidad` int(11) NOT NULL,
-  `id_ciclos` int(11) NOT NULL,
+  `id_ciclo` int(11) NOT NULL,
   `curso` int(11) NOT NULL,
   `num_plazas` int(11) DEFAULT 1, -- para saber cuántas plazas hay
   PRIMARY KEY (`id_vacante`),
   CONSTRAINT `fk_vacantes_entidad` FOREIGN KEY (`id_entidad`) REFERENCES `sgi_entidades` (`id_entidad`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_vacantes_ciclos` FOREIGN KEY (`id_ciclos`) REFERENCES `sgi_ciclos` (`id_ciclo`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_vacantes_ciclos` FOREIGN KEY (`id_ciclo`) REFERENCES `sgi_ciclos` (`id_ciclo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

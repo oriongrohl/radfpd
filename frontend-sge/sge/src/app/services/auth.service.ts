@@ -22,6 +22,11 @@ export class AuthService {
   public async isAuthenticated(url: string): Promise<boolean> {
 
     let rutaSeleccionada: string;
+    let rutaSeleccionadaAlumnos = url.substring(1).split('/')[0]; // Obtenemos la primera parte de la ruta después del "/"
+    if (rutaSeleccionadaAlumnos === 'alumnos' || rutaSeleccionadaAlumnos === 'vacantes') { // Si la ruta es "alumnos" o "vacantes", permitimos el acceso sin verificar el token
+    return true; 
+    }
+
     const promise = new Promise<boolean>((resolve, reject) => {
       rutaSeleccionada = url.substring(1);
       rutaSeleccionada = rutaSeleccionada.split('/')[0];
