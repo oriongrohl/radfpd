@@ -1,41 +1,55 @@
-<h2>Añadir Alumno</h2>
-<form action=""></form>
-
-<!-- Añadir alumnos -->
-<div class="card p-3 mb-4">
-    <h4>Nuevo Alumno (Rápido)</h4>
-    
-    <div class="row">
-        <div class="col">
+<div class="card p-4 mb-4 shadow-sm">
+    <h4>Registro de Alumno</h4>
+    <div class="row g-3">
+        <div class="col-md-3">
             <input #nombreInput type="text" class="form-control" placeholder="Nombre">
         </div>
-        <div class="col">
+        <div class="col-md-3">
             <input #apellidosInput type="text" class="form-control" placeholder="Apellidos">
         </div>
-        <div class="col">
+        <div class="col-md-2">
             <input #nifInput type="text" class="form-control" placeholder="NIF/NIE">
         </div>
-        <div class="col">
-            <button class="btn btn-primary" 
-                (click)="agregarAlumno(nombreInput.value, apellidosInput.value, nifInput.value)">
-                Añadir
+        <div class="col-md-2">
+            <select #cicloSelect class="form-select">
+                <option value="" disabled selected>Elegir Ciclo...</option>
+                <option *ngFor="let c of ciclos" [value]="c.id_ciclo">
+                    {{ c.ciclo }}
+                </option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success w-100"
+                (click)="agregarAlumno(nombreInput.value, apellidosInput.value, nifInput.value, cicloSelect.value)">
+                Guardar
             </button>
         </div>
     </div>
 </div>
 
-
-
-
-<ul>
-    <li *ngFor="let a of alumnos">
-        <p>prueba</p>
-        {{ a.nombre }} {{ a.apellidos }} - {{ a.centro_nombre }}
-        id: {{a.id_alumno}}
-        <button (click)="borrarAlumno(a.id_alumno)">Borrar</button>
-    </li>
-</ul>
-
-<div>
-    
-</div>
+<table class="table table-hover mt-4">
+    <thead class="table-dark">
+        <tr>
+            <th>Nombre</th>
+            <th>Ciclo</th>
+            <th>Centro</th>
+            <th>Empresa Asignada</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let a of alumnos">
+            <td>{{ a.nombre }} {{ a.apellidos }}</td>
+            <td>{{ a.ciclo_nombre }}</td>
+            <td>{{ a.centro_nombre }}</td>
+            <td>
+                <span class="badge" [ngClass]="a.vacante_asignada === 'Ninguna' ? 'bg-secondary' : 'bg-primary'">
+                    {{ a.vacante_asignada }}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-danger btn-sm" (click)="borrarAlumno(a.id_alumno)">Eliminar</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
