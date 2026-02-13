@@ -2,23 +2,25 @@ from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey, UniqueCo
 from sqlalchemy.orm import relationship
 from database import Base
 
-# --- MAESTROS ---
 class Provincia(Base):
     __tablename__ = "sgi_provincias"
     id_provincia = Column(Integer, primary_key=True, autoincrement=True)
     provincia = Column(String(50))
 
-class Ciclo(Base):
-    __tablename__ = "sgi_ciclos"
-    id_ciclo = Column(Integer, primary_key=True, autoincrement=True)
-    ciclo = Column(String(150))
-
 class Entidad(Base):
     __tablename__ = "sgi_entidades"
     id_entidad = Column(Integer, primary_key=True, autoincrement=True)
-    entidad = Column(String(50), nullable=False) # Nombre del centro o empresa
+    entidad = Column(String(50), nullable=False)
 
-# --- ALUMNO ---
+class Ciclo(Base):
+    __tablename__ = "sgi_ciclos"
+    id_ciclo = Column(Integer, primary_key=True, autoincrement=True)
+    ciclo = Column(String(150), nullable=False, unique=True)
+    cod_ciclo = Column(String(10), nullable=False)
+    id_nivel = Column(Integer, nullable=False)
+    id_familia = Column(Integer, nullable=False)
+    observaciones = Column(Text)
+
 class Alumno(Base):
     __tablename__ = "sgi_alumno"
     id_alumno = Column(Integer, primary_key=True, autoincrement=True)
@@ -26,7 +28,7 @@ class Alumno(Base):
     nombre = Column(String(50), nullable=False)
     apellidos = Column(String(50), nullable=False)
     fecha_nacimiento = Column(Date, nullable=False)
-    id_entidad = Column(Integer, ForeignKey("sgi_entidades.id_entidad"), nullable=False)
+    id_entidad = Column(Integer, ForeignKey("sgi_entidades.id_entidad"), nullable=False, default=1)
     id_ciclo = Column(Integer, ForeignKey("sgi_ciclos.id_ciclo"), nullable=False)
     curso = Column(Integer, nullable=False)
     telefono = Column(String(15), nullable=False)
@@ -38,18 +40,15 @@ class Alumno(Base):
 
     entidad = relationship("Entidad")
     ciclo = relationship("Ciclo")
-    # Relación para sacar la vacante asignada en el grid # <-
     asignacion = relationship("Vacante", secondary="sgi_vacantes_x_alumnos", back_populates="alumnos", viewonly=True)
 
-# --- VACANTE ---
 class Vacante(Base):
     __tablename__ = "sgi_vacantes"
     id_vacante = Column(Integer, primary_key=True, autoincrement=True)
     id_entidad = Column(Integer, ForeignKey("sgi_entidades.id_entidad"), nullable=False)
-    id_ciclos = Column(Integer, ForeignKey("sgi_ciclos.id_ciclo"), nullable=False) # <- Corregido a id_ciclo
+    id_ciclos = Column(Integer, ForeignKey("sgi_ciclos.id_ciclo"), nullable=False)
     curso = Column(Integer, nullable=False)
-    num_plazas = Column(Integer, default=1)
-    num_vacantes = Column(Integer, default=0)
+    num_vacantes = Column(Integer, default=1, nullable=False) # Capacidad total
     observaciones = Column(Text)
 
     __table_args__ = (UniqueConstraint('id_entidad', 'id_ciclos', 'curso', name='_entidad_ciclo_curso_uc'),)
@@ -58,10 +57,8 @@ class Vacante(Base):
     ciclo = relationship("Ciclo")
     alumnos = relationship("Alumno", secondary="sgi_vacantes_x_alumnos", back_populates="asignacion")
 
-# --- INTERMEDIA ---
 class VacanteAlumno(Base):
     __tablename__ = "sgi_vacantes_x_alumnos"
     id_vacante_x_alumno = Column(Integer, primary_key=True, autoincrement=True)
     id_vacante = Column(Integer, ForeignKey("sgi_vacantes.id_vacante"), nullable=False)
     id_alumno = Column(Integer, ForeignKey("sgi_alumno.id_alumno"), nullable=False, unique=True)
-
