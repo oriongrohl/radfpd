@@ -46,7 +46,7 @@ export class AsignacionesComponent implements OnInit {
   setupFilters() {
     this.alumnoFilter.valueChanges.subscribe(v => this.applyFilter());
     this.empresaFilter.valueChanges.subscribe(v => this.applyFilter());
-    
+
     this.dataSource.filterPredicate = (data, filter) => {
       const search = JSON.parse(filter);
       return data.alumno_nombre.toLowerCase().includes(search.alumno) &&
@@ -67,7 +67,7 @@ export class AsignacionesComponent implements OnInit {
       this.dataSource.data = res;
       this.dataSource.paginator = this.paginator;
     });
-    
+
     // 2. Datos para el Pop-up
     this.asigService.getAlumnosLibres().subscribe(res => this.alumnosLibres = res);
     this.vacanteService.getVacantes().subscribe(res => {

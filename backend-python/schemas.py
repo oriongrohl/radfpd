@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel # libreria pydantic
 from datetime import date
 from typing import List, Optional
 
@@ -26,7 +26,8 @@ class AlumnoBase(BaseModel):
     id_provincia: int
     observaciones: Optional[str] = None
 
-class AlumnoCreate(AlumnoBase):
+class AlumnoCreate(AlumnoBase): # POST 
+    # no incluimos el id_alumno pq al mandar el POST no existe
     # No incluimos id_entidad porque el backend siempre pondrá 1
     pass
 

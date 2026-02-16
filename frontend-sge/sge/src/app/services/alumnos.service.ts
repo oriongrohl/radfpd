@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 export class AlumnosService {
     // Definir como propiedad de la clase
     readonly MI_API_LOCAL = 'http://127.0.0.1:8000';
-    readonly ENDPOINT = 'alumnos.php';
+    readonly ENDPOINT = 'alumnos';
 
     constructor(private http: HttpClient, private commonService: CommonService) { }
 
@@ -30,12 +30,14 @@ export class AlumnosService {
 
     // Para el formulario de alumnos (solo tecnología 1-9)
     getCiclosTecnologia(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.MI_API_LOCAL}/ciclos.php?solo_tecnologia=true`, { headers: this.commonService.headers });
+        return this.http.get<any[]>(`${this.MI_API_LOCAL}/ciclos?solo_tecnologia=true`, { headers: this.commonService.headers });
     }
 
     // Para el modal de asignación que haremos después
     getAlumnosLibres(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.MI_API_LOCAL}/alumnos.php/libres`, { headers: this.commonService.headers });
+        return this.http.get<any[]>(`${this.MI_API_LOCAL}/alumnos/libres`, { headers: this.commonService.headers });
     }
+
+    updateAlumno(id: number, datos: any) { return this.http.put(`${this.MI_API_LOCAL}/${this.ENDPOINT}/${id}`, datos, { headers: this.commonService.headers }); }
 
 }

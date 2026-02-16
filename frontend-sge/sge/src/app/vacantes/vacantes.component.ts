@@ -18,7 +18,7 @@ export class VacantesComponent implements OnInit {
 
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = ['id_vacante', 'entidad', 'ciclo', 'curso', 'plazas', 'actions'];
-  
+
   // Filtros
   idFilter = new FormControl('');
   entidadFilter = new FormControl('');
@@ -44,6 +44,16 @@ export class VacantesComponent implements OnInit {
   ngOnInit(): void {
     this.cargarDatosMaestros();
     this.listar();
+    // this.cargarCiclos();
+  }
+  // cargarCiclos() {
+  //   this.vacanteService.getCiclos().subscribe(res => {
+  //     this.ciclos = res;
+  //     console.log("Ciclos cargados:", res); // Mira la consola (F12) para ver si llegan datos
+  //   });
+  // }
+  cargarEntidades() {
+    this.http.get<any[]>('http://127.0.0.1:8000/entidades').subscribe(res => this.entidades = res);
   }
 
   initForm() {
@@ -58,7 +68,7 @@ export class VacantesComponent implements OnInit {
 
   cargarDatosMaestros() {
     this.http.get<any[]>('http://127.0.0.1:8000/entidades').subscribe(res => this.entidades = res);
-    this.http.get<any[]>('http://127.0.0.1:8000/ciclos.php').subscribe(res => this.ciclos = res);
+    this.http.get<any[]>('http://127.0.0.1:8000/ciclos').subscribe(res => this.ciclos = res);
   }
 
   listar() {
@@ -73,7 +83,15 @@ export class VacantesComponent implements OnInit {
     if (this.isEdit) {
       this.currentId = vacante.id_vacante;
       this.numAlumnosActuales = vacante.num_alumnos;
-      this.vacanteForm.patchValue(vacante);
+
+      // mapeo de los valores del backend al formulario
+      this.vacanteForm.patchValue({
+        id_entidad: vacante.id_entidad,
+        id_ciclos: vacante.id_ciclos,
+        curso: vacante.curso,
+        num_vacantes: vacante.num_vacantes,
+        observaciones: vacante.observaciones || ''
+      });
     } else {
       this.currentId = null;
       this.numAlumnosActuales = 0;
@@ -83,19 +101,38 @@ export class VacantesComponent implements OnInit {
   }
 
   confirmSave() {
-    const datos = this.vacanteForm.value;
+  const datos = this.vacanteForm.value;
 
-    if (this.isEdit && this.currentId) {
-      // Validación: No permitir bajar plazas por debajo de los alumnos ya asignados
-      if (datos.num_vacantes < this.numAlumnosActuales) {
-        alert(`No puedes reducir a ${datos.num_vacantes} plazas. Hay ${this.numAlumnosActuales} alumnos asignados.`);
-        return;
-      }
-      this.vacanteService.actualizarVacante(this.currentId, datos.num_vacantes).subscribe(() => this.finalizarGuardado());
-    } else {
-      this.vacanteService.crearVacante(datos).subscribe(() => this.finalizarGuardado());
+  if (this.isEdit && this.currentId) {
+    // Validación solo de plazas
+    if (datos.num_vacantes < this.numAlumnosActuales) {
+      alert(`No puedes reducir a ${datos.num_vacantes} plazas. Hay ${this.numAlumnosActuales} alumnos asignados.`);
+      return;
     }
+
+    this.vacanteService.actualizarVacante(this.currentId, datos).subscribe({
+      next: () => {
+        console.log("Vacante actualizada:", datos);
+        this.finalizarGuardado();
+      },
+      error: (err) => {
+        console.error("❌ Error:", err);
+        alert("Error: " + (err.error?.detail || "No se pudo actualizar"));
+      }
+    });
+  } else {
+    this.vacanteService.crearVacante(datos).subscribe({
+      next: () => {
+        console.log("Vacante creada:", datos);
+        this.finalizarGuardado();
+      },
+      error: (err) => {
+        console.error("  Error:", err);
+        alert("Error: " + (err.error?.detail || "No se pudo crear"));
+      }
+    });
   }
+}
 
   finalizarGuardado() {
     this.listar();

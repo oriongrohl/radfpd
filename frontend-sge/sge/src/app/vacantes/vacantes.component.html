@@ -36,7 +36,7 @@
 
             <ng-container matColumnDef="plazas">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header> Alumnos/Plazas </th>
-                <td mat-cell *matCellDef="let v" class="text-center"> 
+                <td mat-cell *matCellDef="let v" class="text-center">
                     <span [style.color]="v.num_alumnos >= v.num_vacantes ? 'red' : 'inherit'">
                         {{v.num_alumnos}} / {{v.num_vacantes}}
                     </span>
@@ -68,10 +68,10 @@
 
 <ng-template #vacanteDialog>
     <h3 mat-dialog-title>{{ isEdit ? 'Editar' : 'Añadir' }} Vacante</h3>
-    
+
     <form [formGroup]="vacanteForm" (ngSubmit)="confirmSave()">
         <div mat-dialog-content>
-            
+
             <mat-form-field appearance="fill" class="w-100">
                 <mat-label>Empresa</mat-label>
                 <mat-select formControlName="id_entidad">

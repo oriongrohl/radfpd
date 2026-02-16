@@ -19,18 +19,18 @@ export class AuthService {
     return this.http.post<ApiResponse>(`${URL_API}/login.php`, body);
   }
 
-  public async isAuthenticated(url: string): Promise<boolean> {
+  public async isAuthenticated(url: string): Promise<boolean> { // Verificar si la ruta es alumnos, vacantes o asignaciones, si es así, permitir el acceso sin verificar el token
 
     let rutaSeleccionada: string;
-    let rutaSeleccionadaAlumnos = url.substring(1).split('/')[0]; // Obtenemos la primera parte de la ruta después del "/"
-    if (rutaSeleccionadaAlumnos === 'alumnos' || rutaSeleccionadaAlumnos === 'vacantes') { // Si la ruta es "alumnos" o "vacantes", permitimos el acceso sin verificar el token
-    return true; 
+    let rutaSeleccionadaAlumnos = url.substring(1).split('/')[0]; //! Obtenemos la primera parte de la ruta para verificar si es alumnos, vacantes o asignaciones
+    if (rutaSeleccionadaAlumnos === 'alumnos' || rutaSeleccionadaAlumnos === 'vacantes' || rutaSeleccionadaAlumnos === 'asignaciones') { //! Si la ruta es alumnos vacantes o asignaciones, permitimos el acceso sin verificar el token
+    return true;
     }
 
-    const promise = new Promise<boolean>((resolve, reject) => {
-      rutaSeleccionada = url.substring(1);
+    const promise = new Promise<boolean>((resolve, reject) => { // Verificar el token para las demás rutas
+      rutaSeleccionada = url.substring(1); // Obtenemos la ruta seleccionada sin el primer caracter '/' para enviarla al backend y verificar si el usuario tiene permisos para acceder a esa ruta
       rutaSeleccionada = rutaSeleccionada.split('/')[0];
-      this.http.get<ApiResponse>(`${URL_API}/check_usuarios.php?ruta=${ rutaSeleccionada }`,  { headers: this.commonService.getHeaders() } )
+      this.http.get<ApiResponse>(`${URL_API}/check_usuarios.php?ruta=${ rutaSeleccionada }`,  { headers: this.commonService.getHeaders() } ) // Enviamos la ruta seleccionada al backend para verificar si el usuario tiene permisos para acceder a esa ruta
       .subscribe((response: ApiResponse) => {
       resolve(response.ok);
       });

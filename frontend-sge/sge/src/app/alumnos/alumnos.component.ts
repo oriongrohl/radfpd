@@ -16,7 +16,7 @@ export class AlumnosComponent implements OnInit {
 
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = ['nif_nie', 'nombre', 'apellidos', 'ciclo', 'acciones'];
-  
+
   alumnoForm!: FormGroup;
   ciclos: any[] = [];
   isEdit = false;
@@ -71,9 +71,9 @@ export class AlumnosComponent implements OnInit {
     this.dataSource.filterPredicate = (data, filter) => {
       const searchTerms = JSON.parse(filter);
       return data.nif_nie.toLowerCase().includes(searchTerms.nif_nie) &&
-             data.nombre.toLowerCase().includes(searchTerms.nombre) &&
-             data.apellidos.toLowerCase().includes(searchTerms.apellidos) &&
-             (data.ciclo_nombre || '').toLowerCase().includes(searchTerms.ciclo_nombre);
+        data.nombre.toLowerCase().includes(searchTerms.nombre) &&
+        data.apellidos.toLowerCase().includes(searchTerms.apellidos) &&
+        (data.ciclo_nombre || '').toLowerCase().includes(searchTerms.ciclo_nombre);
     };
   }
 
@@ -120,17 +120,25 @@ export class AlumnosComponent implements OnInit {
 
   confirmSave() {
     if (this.isEdit && this.currentId) {
-        alert("Funcionalidad de edición pendiente de implementar en Service");
+      // LLAMADA REAL AL SERVICIO PARA ACTUALIZAR
+      this.alumnosService.updateAlumno(this.currentId, this.alumnoForm.value).subscribe({
+        next: () => {
+          this.cargarAlumnos();
+          this.dialog.closeAll();
+        },
+        error: (err) => alert("Error al editar: " + (err.error?.detail || 'Error desconocido'))
+      });
     } else {
+      // Lógica de crear (que ya tenías)
       this.alumnosService.addAlumno(this.alumnoForm.value).subscribe({
         next: () => {
           this.cargarAlumnos();
           this.dialog.closeAll();
         },
-        error: (err) => alert("Error: " + err.error.detail)
+        error: (err) => alert("Error al crear: " + (err.error?.detail || 'Error desconocido'))
       });
     }
-  }
+}
 
   borrarAlumno(id: number) {
     if (confirm("¿Deseas eliminar el alumno?")) {

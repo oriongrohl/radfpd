@@ -36,20 +36,19 @@ export class NavbarComponent implements OnInit {
     const RESPONSE = await this.menuService.getMenu().toPromise();
     this.menu = RESPONSE.data;
 
-    // START AÑADIDO
-    // --- INYECTAR MIS BOTONES A MANO ---
+    //! inyeccion de botones a mano para el grupo de prácticas dual
     const misOpciones = {
-      grupo: 'Gestión FCT',
+      grupo: 'Prácticas Dual',
       opciones: [
-        { 
-          opcion: 'Alumnos', 
-          accion: 'alumnos', 
-          texto_tooltip: 'Listado y gestión de alumnos' 
+        {
+          opcion: 'Alumnos',
+          accion: 'alumnos',
+          texto_tooltip: 'Listado y gestión de alumnos'
         },
-        { 
-          opcion: 'Vacantes', 
-          accion: 'vacantes', 
-          texto_tooltip: 'Gestión de plazas y empresas' 
+        {
+          opcion: 'Vacantes',
+          accion: 'vacantes',
+          texto_tooltip: 'Gestión de plazas y empresas'
         },
         {
           opcion: 'Asignaciones',
