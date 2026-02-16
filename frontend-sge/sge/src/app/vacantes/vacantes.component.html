@@ -1,1 +1,120 @@
-<p>vacantes works!</p>
+<div class="example-container mat-elevation-z8">
+    <div class="example-table-container">
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort>
+
+            <ng-container matColumnDef="id_vacante">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="idFilter" placeholder="Id">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let v"> {{v.id_vacante}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="entidad">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="entidadFilter" placeholder="Empresa">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let v"> {{v.entidad_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="ciclo">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="cicloFilter" placeholder="Ciclo">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let v"> {{v.ciclo_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="curso">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="cursoFilter" placeholder="Curso">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let v" class="text-center"> {{v.curso}}º </td>
+            </ng-container>
+
+            <ng-container matColumnDef="plazas">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Alumnos/Plazas </th>
+                <td mat-cell *matCellDef="let v" class="text-center"> 
+                    <span [style.color]="v.num_alumnos >= v.num_vacantes ? 'red' : 'inherit'">
+                        {{v.num_alumnos}} / {{v.num_vacantes}}
+                    </span>
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>
+                    <button mat-icon-button (click)="openDialog()">
+                        <mat-icon>add_circle</mat-icon>
+                    </button>
+                </th>
+                <td mat-cell *matCellDef="let v">
+                    <button mat-icon-button (click)="openDialog(v)">
+                        <mat-icon>mode_edit</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="deleteVacante(v)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+    </div>
+    <mat-paginator [pageSizeOptions]="[5, 10, 25]"></mat-paginator>
+</div>
+
+<ng-template #vacanteDialog>
+    <h3 mat-dialog-title>{{ isEdit ? 'Editar' : 'Añadir' }} Vacante</h3>
+    
+    <form [formGroup]="vacanteForm" (ngSubmit)="confirmSave()">
+        <div mat-dialog-content>
+            
+            <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Empresa</mat-label>
+                <mat-select formControlName="id_entidad">
+                    <mat-option *ngFor="let e of entidades" [value]="e.id_entidad">
+                        {{e.entidad}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Ciclo</mat-label>
+                <mat-select formControlName="id_ciclos">
+                    <mat-option *ngFor="let c of ciclos" [value]="c.id_ciclo">
+                        {{c.ciclo}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <div class="row">
+                <mat-form-field class="col-6">
+                    <mat-label>Curso</mat-label>
+                    <mat-select formControlName="curso">
+                        <mat-option [value]="1">1º</mat-option>
+                        <mat-option [value]="2">2º</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="col-6">
+                    <mat-label>Nº Vacantes</mat-label>
+                    <input matInput type="number" formControlName="num_vacantes">
+                </mat-form-field>
+            </div>
+
+            <mat-form-field class="w-100">
+                <mat-label>Observaciones</mat-label>
+                <textarea matInput formControlName="observaciones"></textarea>
+            </mat-form-field>
+
+        </div>
+
+        <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="closeDialog()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!vacanteForm.valid">Guardar</button>
+        </div>
+    </form>
+</ng-template>

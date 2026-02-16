@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 import models, schemas
 from database import SessionLocal, engine
@@ -7,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="SGE - Backend")
+app = FastAPI(title="SGE - RAD FPD")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,120 +18,192 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def verificar_token(authorization: str = Header(None)):
-    if authorization is None:
-        raise HTTPException(status_code=401, detail="Token no enviado")
-    return authorization
-
+# Dependencia de DB
 def get_db():
     db = SessionLocal()
     try: yield db
     finally: db.close()
 
-# --- ALUMNOS ---
+def verificar_token(authorization: str = Header(None)):
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Token no enviado")
+    return authorization
+
+# --- AUXILIARES (Para Desplegables) ---
+
+@app.get("/ciclos-tecnologia", response_model=List[schemas.Ciclo])
+def leer_ciclos_tecnologia(db: Session = Depends(get_db)):
+    """Solo devuelve ciclos con ID entre 1 y 9 (Tecnología)"""
+    return db.query(models.Ciclo).filter(models.Ciclo.id_ciclo >= 1, models.Ciclo.id_ciclo <= 9).all()
+
+@app.get("/alumnos-libres", response_model=List[schemas.Alumno])
+def leer_alumnos_libres(db: Session = Depends(get_db)):
+    """Devuelve alumnos que NO están en la tabla sgi_vacantes_x_alumnos"""
+    ocupados = db.query(models.VacanteAlumno.id_alumno).subquery()
+    return db.query(models.Alumno).filter(models.Alumno.id_alumno.not_in(ocupados)).all() # type: ignore
+
+
+# --- CRUD ALUMNOS ---
+
 @app.get("/alumnos.php", response_model=List[schemas.Alumno])
-def leer_alumnos(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
+def leer_alumnos(db: Session = Depends(get_db)):
     db_alumnos = db.query(models.Alumno).all()
     for a in db_alumnos:
         a.centro_nombre = a.entidad.entidad if a.entidad else ""
         a.ciclo_nombre = a.ciclo.ciclo if a.ciclo else ""
-        if a.asignacion:
-            # Mostramos el nombre de la empresa de la primera vacante encontrada
-            a.vacante_asignada = a.asignacion[0].entidad.entidad
     return db_alumnos
 
-@app.get("/alumnos.php/libres", response_model=List[schemas.Alumno])
-def leer_alumnos_libres(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    ocupados = db.query(models.VacanteAlumno.id_alumno).all()
-    lista_ids_ocupados = [id_tup[0] for id_tup in ocupados]
-    
-    query = db.query(models.Alumno)
-    if lista_ids_ocupados:
-        query = query.filter(models.Alumno.id_alumno.not_in(lista_ids_ocupados)) # type: ignore
-    
-    return query.all()
-
 @app.post("/alumnos.php", response_model=schemas.Alumno)
-def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    nuevo_alumno_dict = alumno.model_dump()
-    nuevo_alumno_dict['id_entidad'] = 1 # Forzado por requisito
-    nuevo_alumno = models.Alumno(**nuevo_alumno_dict)
+def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db)):
+    if not (1 <= alumno.id_ciclo <= 9):
+        raise HTTPException(status_code=400, detail="Solo se permiten ciclos de tecnología (1-9)")
+    
+    nuevo_dict = alumno.model_dump()
+    nuevo_dict['id_entidad'] = 1  # Forzado por requisito
+    nuevo_alumno = models.Alumno(**nuevo_dict)
     db.add(nuevo_alumno)
     db.commit()
     db.refresh(nuevo_alumno)
     return nuevo_alumno
 
-# --- VACANTES ---
-@app.get("/vacantes.php", response_model=List[schemas.Vacante])
-def leer_vacantes(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    db_vacantes = db.query(models.Vacante).all()
-    res = []
-    for v in db_vacantes:
-        res.append({
-            **v.__dict__,
-            "entidad_nombre": v.entidad.entidad if v.entidad else "",
-            "ciclo_nombre": v.ciclo.ciclo if v.ciclo else "",
-            "num_alumnos": len(v.alumnos), # type: ignore
-            "listado_alumnos": [f"{a.nombre} {a.apellidos}" for a in v.alumnos] # type: ignore
-        })
-    return res
-
-@app.post("/vacantes.php", response_model=schemas.Vacante)
-def crear_vacante(vacante: schemas.VacanteCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    nueva_vacante = models.Vacante(**vacante.model_dump())
-    db.add(nueva_vacante)
+@app.put("/alumnos.php/{id_alumno}", response_model=schemas.Alumno)
+def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session = Depends(get_db)):
+    a = db.query(models.Alumno).get(id_alumno)
+    if not a: raise HTTPException(status_code=404)
+    for key, value in datos.model_dump().items():
+        setattr(a, key, value)
+    a.id_entidad = 1 # type: ignore # Nos aseguramos que siga siendo 1
     db.commit()
-    db.refresh(nueva_vacante)
-    return nueva_vacante
+    return a
 
-@app.put("/vacantes.php/{id_vacante}", response_model=schemas.Vacante)
-def actualizar_vacante(id_vacante: int, datos: schemas.VacanteUpdate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    v = db.query(models.Vacante).filter(models.Vacante.id_vacante == id_vacante).first()
-    if not v: raise HTTPException(status_code=404, detail="Vacante no encontrada")
-    
-    ocupacion = len(v.alumnos) # type: ignore
-    if datos.num_vacantes < ocupacion:
-        raise HTTPException(status_code=400, detail=f"No puedes bajar a {datos.num_vacantes} plazas, hay {ocupacion} alumnos.")
-    
-    v.num_vacantes = datos.num_vacantes # type: ignore
-    db.commit()
-    db.refresh(v)
-    return {**v.__dict__, "num_alumnos": ocupacion}
-
-# --- ASIGNACIONES ---
-@app.post("/vacantes.php/asignar/{vacante_id}/{alumno_id}")
-def asignar_alumno(vacante_id: int, alumno_id: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
-    v = db.query(models.Vacante).get(vacante_id)
-    a = db.query(models.Alumno).get(alumno_id)
-    
-    if not v or not a: raise HTTPException(status_code=404, detail="No existe vacante o alumno")
-    
-    if v.id_ciclo != a.id_ciclo or v.curso != a.curso: # type: ignore
-        raise HTTPException(status_code=400, detail="Ciclo o curso no coinciden")
-    
-    if len(v.alumnos) >= v.num_vacantes: # type: ignore
-        raise HTTPException(status_code=400, detail="Vacante completa")
-
-    if not (1 <= v.id_ciclo <= 9): # type: ignore
-        raise HTTPException(status_code=400, detail="Solo ciclos de tecnología (1-9)")
-
-    nueva = models.VacanteAlumno(id_vacante=vacante_id, id_alumno=alumno_id)
-    db.add(nueva)
+@app.delete("/alumnos.php/{id_alumno}")
+def borrar_alumno(id_alumno: int, db: Session = Depends(get_db)):
+    # Borrar primero asignaciones
+    db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == id_alumno).delete()
+    db.query(models.Alumno).filter(models.Alumno.id_alumno == id_alumno).delete()
     db.commit()
     return {"status": "ok"}
 
-# --- CICLOS ---
-@app.get("/ciclos.php", response_model=List[schemas.Ciclo])
-def leer_ciclos(solo_tecnologia: bool = False, db: Session = Depends(get_db)):
-    query = db.query(models.Ciclo)
-    if solo_tecnologia:
-        query = query.filter(models.Ciclo.id_ciclo <= 9)
-    return query.all()
 
-@app.delete("/alumnos.php/{alumno_id}")
-def borrar_alumno(alumno_id: int, db: Session = Depends(get_db)):
-    # Borramos primero sus asignaciones para evitar error de FK
-    db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == alumno_id).delete()
-    db.query(models.Alumno).filter(models.Alumno.id_alumno == alumno_id).delete()
+# --- CRUD VACANTES ---
+
+@app.get("/vacantes.php")
+def leer_vacantes(db: Session = Depends(get_db)):
+    vacantes = db.query(models.Vacante).all()
+    res = []
+    for v in vacantes:
+        # SQL COUNT real de la ocupación
+        num_ocupados = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == v.id_vacante).count()
+        res.append({
+            "id_vacante": v.id_vacante,
+            "entidad_nombre": v.entidad.entidad if v.entidad else "",
+            "ciclo_nombre": v.ciclo.ciclo if v.ciclo else "",
+            "num_vacantes": v.num_vacantes,
+            "num_alumnos": num_ocupados, # El count que pediste
+            "curso": v.curso,
+            "id_entidad": v.id_entidad,
+            "id_ciclos": v.id_ciclos
+        })
+    return res
+
+@app.get("/vacantes-disponibles")
+def leer_vacantes_disponibles(db: Session = Depends(get_db)):
+    """Devuelve vacantes que aún tienen plazas libres"""
+    todas = db.query(models.Vacante).all()
+    disponibles = []
+    for v in todas:
+        ocupadas = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == v.id_vacante).count()
+        if ocupadas < v.num_vacantes: # type: ignore
+            disponibles.append({
+                "id_vacante": v.id_vacante,
+                "nombre_mostrar": f"{v.entidad.entidad} - {v.ciclo.ciclo} ({v.num_vacantes - ocupadas} libres)"
+            })
+    return disponibles
+
+# Nota: El de /alumnos-libres ya lo tienes en tu código, ¡está perfecto!
+
+@app.post("/vacantes.php", response_model=schemas.Vacante)
+def crear_vacante(vacante: schemas.VacanteCreate, db: Session = Depends(get_db)):
+    nueva = models.Vacante(**vacante.model_dump())
+    db.add(nueva)
     db.commit()
-    return {"message": "ok"}
+    db.refresh(nueva)
+    return nueva
+
+@app.put("/vacantes.php/{id_vacante}")
+def actualizar_vacante(id_vacante: int, datos: schemas.VacanteUpdate, db: Session = Depends(get_db)):
+    v = db.query(models.Vacante).get(id_vacante)
+    if not v: raise HTTPException(status_code=404)
+    
+    # Validación de cupo: No puede ser menor que los alumnos ya asignados
+    num_ocupados = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == id_vacante).count()
+    if datos.num_vacantes < num_ocupados:
+        raise HTTPException(status_code=400, detail=f"No puedes bajar a {datos.num_vacantes} plazas, ya hay {num_ocupados} alumnos asignados.")
+    
+    v.num_vacantes = datos.num_vacantes # type: ignore
+    db.commit()
+    return v
+
+@app.delete("/vacantes.php/{id_vacante}")
+def borrar_vacante(id_vacante: int, db: Session = Depends(get_db)):
+    # Impedir borrar si hay alumnos asignados (opcional, pero recomendado)
+    tiene_alumnos = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == id_vacante).first()
+    if tiene_alumnos:
+        raise HTTPException(status_code=400, detail="No puedes borrar una vacante que tiene alumnos asignados")
+    db.query(models.Vacante).filter(models.Vacante.id_vacante == id_vacante).delete()
+    db.commit()
+    return {"status": "ok"}
+
+
+# --- CRUD ASIGNACIONES (sgi_vacantes_x_alumnos) ---
+
+@app.get("/asignaciones.php")
+def leer_asignaciones(db: Session = Depends(get_db)):
+    asigs = db.query(models.VacanteAlumno).all()
+    return [{
+        "id_vacante_x_alumno": a.id_vacante_x_alumno,
+        "id_vacante": a.id_vacante,
+        "id_alumno": a.id_alumno,
+        "alumno_nombre": f"{a.alumno.nombre} {a.alumno.apellidos}",
+        "empresa_nombre": a.vacante.entidad.entidad
+    } for a in asigs]
+
+# Asegúrate de importar schemas arriba si no lo tienes
+@app.post("/asignaciones.php")
+def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_db)):
+    # 1. Verificar si el alumno ya está en cualquier asignación
+    # (El unique=True en el modelo ya lo protege, pero esto da un error limpio al frontend)
+    existe = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == asig.id_alumno).first()
+    if existe: 
+        raise HTTPException(status_code=400, detail="Este alumno ya está asignado a otra vacante.")
+    
+    # 2. Verificar cupo de la vacante
+    v = db.query(models.Vacante).get(asig.id_vacante)
+    if not v:
+        raise HTTPException(status_code=404, detail="La vacante no existe.")
+        
+    num_ocupados = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == asig.id_vacante).count()
+    if num_ocupados >= v.num_vacantes: # type: ignore
+        raise HTTPException(status_code=400, detail="Lo sentimos, no quedan plazas libres en esta vacante.")
+    
+    # 3. Crear asignación
+    nueva = models.VacanteAlumno(id_vacante=asig.id_vacante, id_alumno=asig.id_alumno)
+    db.add(nueva)
+    db.commit()
+    return {"status": "ok", "message": "Asignación realizada correctamente"}
+
+@app.delete("/asignaciones.php/{id_asig}")
+def borrar_asignacion(id_asig: int, db: Session = Depends(get_db)):
+    db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante_x_alumno == id_asig).delete()
+    db.commit()
+    return {"status": "ok"}
+
+@app.get("/entidades")
+def leer_entidades(db: Session = Depends(get_db)):
+    # Devuelve todas las empresas para el desplegable de vacantes
+    return db.query(models.Entidad).all()
+
+@app.get("/ciclos.php")
+def leer_ciclos_completo(db: Session = Depends(get_db)):
+    # Devuelve todos los ciclos para el desplegable de vacantes
+    return db.query(models.Ciclo).all()

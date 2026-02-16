@@ -13,7 +13,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
 import { DatosEntidadComponent } from './entidades/datos-entidad/datos-entidad.component'
-import { DatosReunionComponent } from './reuniones/datos-reunion/datos-reunion.component'
+import { DatosReunionComponent } from './reuniones/datos-reunion/datos-reunion.component';
+import { AsignacionesComponent } from './asignaciones/asignaciones.component';
 
 // import { NgxLoadingXModule, POSITION, SPINNER, NgxLoadingXConfig } from 'ngx-loading-x';
 
@@ -33,7 +34,7 @@ import { DatosReunionComponent } from './reuniones/datos-reunion/datos-reunion.c
 
 @NgModule({
   declarations: [
-    AppComponent,
+    AppComponent
   ],
   imports: [
     BrowserModule,

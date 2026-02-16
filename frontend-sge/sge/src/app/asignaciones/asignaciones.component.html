@@ -1,0 +1,71 @@
+<div class="example-container mat-elevation-z8">
+    <div class="example-table-container">
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort>
+
+            <ng-container matColumnDef="alumno_nombre">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="alumnoFilter" placeholder="Alumno">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.alumno_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="empresa_nombre">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="empresaFilter" placeholder="Empresa">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.empresa_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef>
+                    <button mat-icon-button (click)="openDialog()">
+                        <mat-icon>add_circle</mat-icon>
+                    </button>
+                </th>
+                <td mat-cell *matCellDef="let a">
+                    <button mat-icon-button color="warn" (click)="eliminar(a.id_vacante_x_alumno)">
+                        <mat-icon>link_off</mat-icon>
+                    </button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+    </div>
+    <mat-paginator [pageSizeOptions]="[10, 20, 50]"></mat-paginator>
+</div>
+
+<ng-template #asigDialog>
+    <h3 mat-dialog-title>Nueva Asignación</h3>
+    <form [formGroup]="asigForm" (ngSubmit)="guardarAsignacion()">
+        <div mat-dialog-content>
+            <p>Selecciona un alumno sin asignar y una vacante con plazas disponibles.</p>
+            
+            <mat-form-field class="w-100" appearance="outline">
+                <mat-label>Alumno disponible</mat-label>
+                <mat-select formControlName="id_alumno">
+                    <mat-option *ngFor="let al of alumnosLibres" [value]="al.id_alumno">
+                        {{al.nombre}} {{al.apellidos}} ({{al.nif_nie}})
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field class="w-100" appearance="outline">
+                <mat-label>Empresa / Vacante</mat-label>
+                <mat-select formControlName="id_vacante">
+                    <mat-option *ngFor="let v of vacantesDisponibles" [value]="v.id_vacante">
+                        {{v.entidad_nombre}} - {{v.ciclo_nombre}} (Quedan {{v.num_vacantes - v.num_alumnos}})
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+
+        <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="dialog.closeAll()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!asigForm.valid">Asignar Plaza</button>
+        </div>
+    </form>
+</ng-template>

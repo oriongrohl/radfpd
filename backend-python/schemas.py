@@ -11,6 +11,7 @@ class Ciclo(BaseModel):
     observaciones: Optional[str] = None
     class Config: from_attributes = True
 
+# --- ALUMNOS ---
 class AlumnoBase(BaseModel):
     nif_nie: str
     nombre: str
@@ -26,9 +27,10 @@ class AlumnoBase(BaseModel):
     observaciones: Optional[str] = None
 
 class AlumnoCreate(AlumnoBase):
+    # No incluimos id_entidad porque el backend siempre pondrá 1
     pass
 
-class Alumno(AlumnoBase):
+class Alumno(AlumnoBase): # lo que devuelve a angular
     id_alumno: int
     id_entidad: int
     centro_nombre: str = ""
@@ -36,9 +38,10 @@ class Alumno(AlumnoBase):
     vacante_asignada: str = "Ninguna"
     class Config: from_attributes = True
 
+# --- VACANTES ---
 class VacanteBase(BaseModel):
     id_entidad: int
-    id_ciclo: int
+    id_ciclos: int 
     curso: int
     num_vacantes: int
     observaciones: Optional[str] = None
@@ -49,10 +52,28 @@ class VacanteCreate(VacanteBase):
 class VacanteUpdate(BaseModel):
     num_vacantes: int
 
-class Vacante(VacanteBase):
+class Vacante(VacanteBase): # lo que envia el backend al frontend
     id_vacante: int
     entidad_nombre: str = ""
     ciclo_nombre: str = ""
     num_alumnos: int = 0
     listado_alumnos: List[str] = []
     class Config: from_attributes = True
+
+# --- ASIGNACIONES (Tabla Intermedia) ---
+class VacanteAlumnoBase(BaseModel):
+    id_vacante: int
+    id_alumno: int
+
+class VacanteAlumnoCreate(VacanteAlumnoBase):
+    pass
+
+class VacanteAlumno(VacanteAlumnoBase):
+    id_vacante_x_alumno: int
+    alumno_nombre: str = ""
+    empresa_nombre: str = ""
+    class Config: from_attributes = True
+
+class AsignacionCreate(BaseModel):
+    id_vacante: int
+    id_alumno: int

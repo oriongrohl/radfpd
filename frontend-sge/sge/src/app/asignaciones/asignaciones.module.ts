@@ -1,8 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { AlumnosRoutingModule } from './alumnos-routing.module';
-import { AlumnosComponent } from './alumnos.component';
+import { AsignacionesComponent } from './asignaciones.component';
+import { AsignacionesRoutingModule } from './asignaciones-routing.module';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms'; // Para [formControl] e [ngModel]
 import { MatTableModule } from '@angular/material/table';         // Para [dataSource]
 import { MatInputModule } from '@angular/material/input';         // Para matInput
@@ -14,10 +13,10 @@ import { MatButtonModule } from '@angular/material/button';       // Para mat-bu
 import { MatPaginatorModule } from '@angular/material/paginator'; // Para el paginador
 
 @NgModule({
-  declarations: [AlumnosComponent],
-  imports: [
+    declarations: [AsignacionesComponent],
+    imports: [
     CommonModule,
-    AlumnosRoutingModule,
+    AsignacionesRoutingModule,
     FormsModule,
     ReactiveFormsModule,
     FormsModule,
@@ -29,6 +28,6 @@ import { MatPaginatorModule } from '@angular/material/paginator'; // Para el pag
     MatIconModule,
     MatButtonModule,
     MatPaginatorModule
-  ]
+    ]
 })
-export class AlumnosModule { }
+export class AsignacionesModule { }

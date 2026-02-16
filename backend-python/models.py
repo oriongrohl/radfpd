@@ -37,7 +37,8 @@ class Alumno(Base):
     localidad = Column(String(50))
     id_provincia = Column(Integer, ForeignKey("sgi_provincias.id_provincia"), nullable=False)
     observaciones = Column(Text)
-
+    
+    asignaciones_detalles = relationship("VacanteAlumno", back_populates="alumno")
     entidad = relationship("Entidad")
     ciclo = relationship("Ciclo")
     asignacion = relationship("Vacante", secondary="sgi_vacantes_x_alumnos", back_populates="alumnos", viewonly=True)
@@ -56,9 +57,14 @@ class Vacante(Base):
     entidad = relationship("Entidad")
     ciclo = relationship("Ciclo")
     alumnos = relationship("Alumno", secondary="sgi_vacantes_x_alumnos", back_populates="asignacion")
+    asignaciones_v = relationship("VacanteAlumno", back_populates="vacante")
 
 class VacanteAlumno(Base):
     __tablename__ = "sgi_vacantes_x_alumnos"
     id_vacante_x_alumno = Column(Integer, primary_key=True, autoincrement=True)
     id_vacante = Column(Integer, ForeignKey("sgi_vacantes.id_vacante"), nullable=False)
     id_alumno = Column(Integer, ForeignKey("sgi_alumno.id_alumno"), nullable=False, unique=True)
+
+    #  relaciones para acceder a los nombres
+    alumno = relationship("Alumno", back_populates="asignaciones_detalles")
+    vacante = relationship("Vacante", back_populates="asignaciones_v")

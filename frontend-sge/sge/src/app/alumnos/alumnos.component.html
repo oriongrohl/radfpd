@@ -1,55 +1,121 @@
-<div class="card p-4 mb-4 shadow-sm">
-    <h4>Registro de Alumno</h4>
-    <div class="row g-3">
-        <div class="col-md-3">
-            <input #nombreInput type="text" class="form-control" placeholder="Nombre">
-        </div>
-        <div class="col-md-3">
-            <input #apellidosInput type="text" class="form-control" placeholder="Apellidos">
-        </div>
-        <div class="col-md-2">
-            <input #nifInput type="text" class="form-control" placeholder="NIF/NIE">
-        </div>
-        <div class="col-md-2">
-            <select #cicloSelect class="form-select">
-                <option value="" disabled selected>Elegir Ciclo...</option>
-                <option *ngFor="let c of ciclos" [value]="c.id_ciclo">
-                    {{ c.ciclo }}
-                </option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-success w-100"
-                (click)="agregarAlumno(nombreInput.value, apellidosInput.value, nifInput.value, cicloSelect.value)">
-                Guardar
-            </button>
-        </div>
+<div class="example-container mat-elevation-z8">
+    <div class="example-table-container">
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort>
+
+            <ng-container matColumnDef="nif_nie">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="nifFilter" placeholder="NIF/NIE">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.nif_nie}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="nombre">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="nombreFilter" placeholder="Nombre">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="apellidos">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="apellidosFilter" placeholder="Apellidos">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.apellidos}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="ciclo">
+                <th mat-header-cell *matHeaderCellDef>
+                    <input matInput [formControl]="cicloFilter" placeholder="Ciclo">
+                    <span mat-sort-header></span>
+                </th>
+                <td mat-cell *matCellDef="let a"> {{a.ciclo_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef>
+                    <button mat-icon-button (click)="openDialog()">
+                        <mat-icon>add_circle</mat-icon>
+                    </button>
+                    <button mat-icon-button>
+                        <mat-icon>filter_list</mat-icon>
+                    </button>
+                </th>
+                <td mat-cell *matCellDef="let a">
+                    <button mat-icon-button (click)="openDialog(a)">
+                        <mat-icon>mode_edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="borrarAlumno(a.id_alumno)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        </table>
     </div>
+    <mat-paginator #paginator [pageSize]="10" [pageSizeOptions]="[5, 10, 25]"></mat-paginator>
 </div>
 
-<table class="table table-hover mt-4">
-    <thead class="table-dark">
-        <tr>
-            <th>Nombre</th>
-            <th>Ciclo</th>
-            <th>Centro</th>
-            <th>Empresa Asignada</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let a of alumnos">
-            <td>{{ a.nombre }} {{ a.apellidos }}</td>
-            <td>{{ a.ciclo_nombre }}</td>
-            <td>{{ a.centro_nombre }}</td>
-            <td>
-                <span class="badge" [ngClass]="a.vacante_asignada === 'Ninguna' ? 'bg-secondary' : 'bg-primary'">
-                    {{ a.vacante_asignada }}
-                </span>
-            </td>
-            <td>
-                <button class="btn btn-danger btn-sm" (click)="borrarAlumno(a.id_alumno)">Eliminar</button>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<ng-template #alumnoDialog>
+    <h3 mat-dialog-title>{{ isEdit ? 'Editar' : 'Nuevo' }} Alumno</h3>
+    
+    <form [formGroup]="alumnoForm" (ngSubmit)="confirmSave()">
+        <div mat-dialog-content>
+            <div class="form-row row">
+                <mat-form-field color="accent" class="col-md-4">
+                    <input matInput placeholder="NIF/NIE" formControlName="nif_nie" maxlength="9" required>
+                </mat-form-field>
+                <mat-form-field color="accent" class="col-md-4">
+                    <input matInput placeholder="Nombre" formControlName="nombre" required>
+                </mat-form-field>
+                <mat-form-field color="accent" class="col-md-4">
+                    <input matInput placeholder="Apellidos" formControlName="apellidos" required>
+                </mat-form-field>
+            </div>
+
+            <div class="form-row row">
+                <mat-form-field class="col-md-8">
+                    <mat-label>Ciclo Formativo</mat-label>
+                    <mat-select formControlName="id_ciclo" required>
+                        <mat-option *ngFor="let c of ciclos" [value]="c.id_ciclo">
+                            {{c.ciclo}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <mat-form-field class="col-md-4">
+                    <mat-label>Curso</mat-label>
+                    <mat-select formControlName="curso" required>
+                        <mat-option [value]="1">1º</mat-option>
+                        <mat-option [value]="2">2º</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+
+            <div class="form-row row">
+                <mat-form-field color="accent" class="col-md-6">
+                    <mat-label>Fecha de Nacimiento</mat-label>
+                    <input matInput type="date" formControlName="fecha_nacimiento" required>
+                </mat-form-field>
+                <mat-form-field color="accent" class="col-md-6">
+                    <input matInput placeholder="Teléfono" formControlName="telefono" maxlength="15">
+                </mat-form-field>
+            </div>
+
+            <div class="form-row">
+                <mat-form-field color="accent" class="w-100">
+                    <textarea matInput placeholder="Observaciones" formControlName="observaciones"></textarea>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="dialog.closeAll()">Cancelar</button>
+            <button mat-button id="onSubmit" type="submit" [disabled]="!alumnoForm.valid">Guardar</button>
+        </div>
+    </form>
+</ng-template>

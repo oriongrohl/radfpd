@@ -50,6 +50,11 @@ export class NavbarComponent implements OnInit {
           opcion: 'Vacantes', 
           accion: 'vacantes', 
           texto_tooltip: 'Gestión de plazas y empresas' 
+        },
+        {
+          opcion: 'Asignaciones',
+          accion: 'asignaciones',
+          texto_tooltip: 'Lista y gestión de asignaciones de alumnos a vacantes'
         }
       ]
     };
