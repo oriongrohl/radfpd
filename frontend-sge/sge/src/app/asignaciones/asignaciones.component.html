@@ -18,6 +18,16 @@
                 <td mat-cell *matCellDef="let a"> {{a.empresa_nombre}} </td>
             </ng-container>
 
+            <ng-container matColumnDef="ciclo">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Ciclo </th>
+                <td mat-cell *matCellDef="let a"> {{a.ciclo_nombre}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="curso">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header> Curso </th>
+                <td mat-cell *matCellDef="let a" class="text-center"> {{a.curso}}º </td>
+            </ng-container>
+
             <ng-container matColumnDef="acciones">
                 <th mat-header-cell *matHeaderCellDef>
                     <button mat-icon-button (click)="openDialog()">

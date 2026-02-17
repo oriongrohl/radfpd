@@ -31,14 +31,14 @@ def verificar_token(authorization: str = Header(None)):
 
 # --- AUXILIARES (Para Desplegables) ---
 
-@app.get("/ciclos-tecnologia", response_model=List[schemas.Ciclo])
-def leer_ciclos_tecnologia(db: Session = Depends(get_db)):
-    """Solo devuelve ciclos con ID entre 1 y 9 (Tecnología)"""
+@app.get("/ciclos", response_model=List[schemas.Ciclo])
+def leer_ciclos_tecnologia(solo_tecnologia: bool = False, db: Session = Depends(get_db)):
+    # Solo devuelve ciclos con ID entre 1 y 9 (Tecnología)
     return db.query(models.Ciclo).filter(models.Ciclo.id_ciclo >= 1, models.Ciclo.id_ciclo <= 9).all()
 
 @app.get("/alumnos-libres", response_model=List[schemas.Alumno])
 def leer_alumnos_libres(db: Session = Depends(get_db)):
-    """Devuelve alumnos que NO están en la tabla sgi_vacantes_x_alumnos"""
+    # Devuelve alumnos que NO están en la tabla sgi_vacantes_x_alumnos
     ocupados = db.query(models.VacanteAlumno.id_alumno).subquery()
     return db.query(models.Alumno).filter(models.Alumno.id_alumno.not_in(ocupados)).all() # type: ignore
 
@@ -57,7 +57,9 @@ def leer_alumnos(db: Session = Depends(get_db)):
 def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db)):
     if not (1 <= alumno.id_ciclo <= 9):
         raise HTTPException(status_code=400, detail="Solo se permiten ciclos de tecnología (1-9)")
-    
+    # comprobar que el dni tenga formato correcto (8 dígitos + letra)
+    if len(alumno.nif_nie) != 9 or not alumno.nif_nie[:8].isdigit() or not alumno.nif_nie[8].isalpha():
+        raise HTTPException(status_code=400, detail="El NIF/NIE debe tener 8 dígitos seguidos de una letra")
     nuevo_dict = alumno.model_dump()
     nuevo_dict['id_entidad'] = 1  # Forzado por requisito
     nuevo_alumno = models.Alumno(**nuevo_dict)
@@ -138,12 +140,12 @@ def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Sessio
     if datos.num_vacantes < num_ocupados:
         raise HTTPException(status_code=400, detail=f"No puedes bajar a {datos.num_vacantes} plazas, ya hay {num_ocupados} alumnos asignados.")
     
-    v.id_entidad = datos.id_entidad
-    v.id_ciclos = datos.id_ciclos
-    v.curso = datos.curso
-    v.num_vacantes = datos.num_vacantes
-    v.observaciones = datos.observaciones
+    update_data = datos.model_dump()
+    for key, value in update_data.items():
+        setattr(v, key, value)
+    
     db.commit()
+    db.refresh(v)
     return v
 
 @app.delete("/vacantes/{id_vacante}")
@@ -167,7 +169,9 @@ def leer_asignaciones(db: Session = Depends(get_db)):
         "id_vacante": a.id_vacante,
         "id_alumno": a.id_alumno,
         "alumno_nombre": f"{a.alumno.nombre} {a.alumno.apellidos}",
-        "empresa_nombre": a.vacante.entidad.entidad
+        "empresa_nombre": a.vacante.entidad.entidad,
+        "ciclo_nombre": a.vacante.ciclo.ciclo, # para poder ver en asignaciones el ciclo y curso sin tener que hacer joins adicionales
+        "curso": a.vacante.curso
     } for a in asigs]
 
 @app.post("/asignaciones")
@@ -208,3 +212,5 @@ def leer_entidades(db: Session = Depends(get_db)):
 def leer_ciclos_completo(db: Session = Depends(get_db)):
     # Devuelve todos los ciclos para el desplegable de vacantes
     return db.query(models.Ciclo).all()
+
+    

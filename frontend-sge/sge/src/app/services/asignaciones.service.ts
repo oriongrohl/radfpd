@@ -23,7 +23,7 @@ import { Observable } from 'rxjs';
 
     // 3. Crear una nueva asignación (CORREGIDO)
     asignar(id_vacante: number, id_alumno: number): Observable<any> {
-        const url = `${this.apiUrl}/asignaciones.php`;
+        const url = `${this.apiUrl}/asignaciones`;
 
         // Creamos el objeto que el backend espera recibir en el body
         const body = {

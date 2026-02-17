@@ -16,7 +16,7 @@ export class AsignacionesComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   dataSource = new MatTableDataSource<any>([]);
-  displayedColumns: string[] = ['alumno_nombre', 'empresa_nombre', 'acciones'];
+  displayedColumns: string[] = ['alumno_nombre', 'empresa_nombre', 'ciclo', 'curso', 'acciones'];
 
   asigForm!: FormGroup;
   alumnosLibres: any[] = [];
