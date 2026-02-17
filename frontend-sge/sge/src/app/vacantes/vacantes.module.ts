@@ -12,7 +12,8 @@ import { MatDialogModule } from '@angular/material/dialog';       // Para el Pop
 import { MatSelectModule } from '@angular/material/select';       // Para mat-select
 import { MatIconModule } from '@angular/material/icon';           // Para mat-icon
 import { MatButtonModule } from '@angular/material/button';       // Para mat-button
-import { MatPaginatorModule } from '@angular/material/paginator'; // Para el paginador
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatListModule } from "@angular/material/list"; // Para el paginador
 
 @NgModule({
   declarations: [VacantesComponent],
@@ -29,7 +30,8 @@ import { MatPaginatorModule } from '@angular/material/paginator'; // Para el pag
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatListModule
 ]
 })
 export class VacantesModule { }

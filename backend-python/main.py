@@ -75,6 +75,14 @@ def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session =
     for key, value in datos.model_dump().items():
         setattr(a, key, value)
     a.id_entidad = 1 # type: ignore # Nos aseguramos que siga siendo 1
+    
+    # si existe una asignación para este alumno, verificar que el ciclo y curso siguen coincidiendo con la vacante asignada
+    asignacion = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == id_alumno).first()
+    if asignacion:
+        vacante = db.query(models.Vacante).get(asignacion.id_vacante)
+        if vacante and (a.id_ciclo != vacante.id_ciclos or a.curso != vacante.curso):
+            raise HTTPException(status_code=400, detail="No puedes cambiar el ciclo o curso porque el alumno ya está asignado a una vacante que no coincide con esos datos.")
+    
     db.commit()
     return a
 
@@ -144,6 +152,14 @@ def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Sessio
     for key, value in update_data.items():
         setattr(v, key, value)
     
+    # no poder cambiar el ciclo o curso si ya hay alumnos asignados que no coincidirían con esos cambios
+    if num_ocupados > 0:
+        asignaciones = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == id_vacante).all()
+        for a in asignaciones:
+            alumno = db.query(models.Alumno).get(a.id_alumno)
+            if alumno and (alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso):
+                raise HTTPException(status_code=400, detail="No puedes cambiar el ciclo o curso porque ya hay alumnos asignados que no coinciden con esos datos.")
+    
     db.commit()
     db.refresh(v)
     return v
@@ -182,7 +198,7 @@ def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_d
     if existe: 
         raise HTTPException(status_code=400, detail="Este alumno ya está asignado a otra vacante.")
     
-    # 2. Verificar cupo de la vacante
+    # 2 Verificar cupo de la vacante
     v = db.query(models.Vacante).get(asig.id_vacante)
     if not v:
         raise HTTPException(status_code=404, detail="La vacante no existe.")
@@ -191,7 +207,15 @@ def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_d
     if num_ocupados >= v.num_vacantes: # type: ignore
         raise HTTPException(status_code=400, detail="Lo sentimos, no quedan plazas libres en esta vacante.")
     
-    # 3. Crear asignación
+    # 3 verificar que el ciclo y curso del alumno coincide con el de la vacante
+    alumno = db.query(models.Alumno).get(asig.id_alumno)
+    if not alumno:
+        raise HTTPException(status_code=404, detail="El alumno no existe.")
+    
+    if alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso:
+        raise HTTPException(status_code=400, detail="El ciclo o curso del alumno no coincide con los de la vacante.")
+    
+    # 3. Crear asignacion
     nueva = models.VacanteAlumno(id_vacante=asig.id_vacante, id_alumno=asig.id_alumno)
     db.add(nueva)
     db.commit()
@@ -213,4 +237,6 @@ def leer_ciclos_completo(db: Session = Depends(get_db)):
     # Devuelve todos los ciclos para el desplegable de vacantes
     return db.query(models.Ciclo).all()
 
-    
+@app.get("/entidades-centros")
+def leer_centros_educativos(db: Session = Depends(get_db)):
+    return db.query(models.Entidad).filter(models.Entidad.id_tipo_entidad == 1).all() # muestra solo entidades que son centros educativos (id_tipo_entidad = 1)

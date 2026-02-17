@@ -6,24 +6,24 @@ import { Observable } from 'rxjs';
     providedIn: 'root'
 })
     export class AsignacionesService {
-    // URL de tu backend FastAPI
-    private apiUrl = 'http://127.0.0.1:8000';
+    // URL backend FastAPI
+    private FAST_API = 'http://127.0.0.1:8000';
 
     constructor(private http: HttpClient) { }
 
-    // 1. Obtener todas las asignaciones actuales
+    // obtener todas las asignaciones actuales
     getAsignaciones(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.apiUrl}/asignaciones`);
+        return this.http.get<any[]>(`${this.FAST_API}/asignaciones`);
     }
 
-    // 2. Obtener solo los alumnos que no tienen empresa
+    // obtener solo los alumnos que no tienen empresa
     getAlumnosLibres(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.apiUrl}/alumnos-libres`);
+        return this.http.get<any[]>(`${this.FAST_API}/alumnos-libres`);
     }
 
-    // 3. Crear una nueva asignación (CORREGIDO)
+    // Crear una nueva asignacion corregido por fin inshallah
     asignar(id_vacante: number, id_alumno: number): Observable<any> {
-        const url = `${this.apiUrl}/asignaciones`;
+        const url = `${this.FAST_API}/asignaciones`;
 
         // Creamos el objeto que el backend espera recibir en el body
         const body = {
@@ -35,8 +35,8 @@ import { Observable } from 'rxjs';
         return this.http.post(url, body);
     }
 
-    // 4. Eliminar una asignación
+    // eliminar una asignacion
     borrarAsignacion(id_asig: number): Observable<any> {
-        return this.http.delete(`${this.apiUrl}/asignaciones/${id_asig}`);
+        return this.http.delete(`${this.FAST_API}/asignaciones/${id_asig}`);
     }
 }

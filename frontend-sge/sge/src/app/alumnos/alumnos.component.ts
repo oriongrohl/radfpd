@@ -15,10 +15,11 @@ export class AlumnosComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   dataSource = new MatTableDataSource<any>([]);
-  displayedColumns: string[] = ['nif_nie', 'nombre', 'apellidos', 'ciclo', 'acciones'];
+  displayedColumns: string[] = ['nif_nie', 'nombre', 'apellidos', 'ciclo', 'curso', 'acciones'];
 
   alumnoForm!: FormGroup;
   ciclos: any[] = [];
+  entidades: any[] = [];
   isEdit = false;
   currentId: number | null = null;
 
@@ -27,6 +28,7 @@ export class AlumnosComponent implements OnInit {
   nombreFilter = new FormControl('');
   apellidosFilter = new FormControl('');
   cicloFilter = new FormControl('');
+  cursoFilter = new FormControl('');
 
   filterValues = {
     nif_nie: '',
@@ -47,9 +49,10 @@ export class AlumnosComponent implements OnInit {
     this.cargarAlumnos();
     this.cargarCiclos();
     this.setupFilters();
+    this.cargarEntidades();
   }
 
-  // Configura la lógica de filtrado múltiple
+  // --- CONFIGURACIÓN DE FILTROS ---
   setupFilters() {
     this.nifFilter.valueChanges.subscribe(value => {
       this.filterValues.nif_nie = value?.toLowerCase() || '';
@@ -89,14 +92,18 @@ export class AlumnosComponent implements OnInit {
       fecha_nacimiento: ['2000-01-01', Validators.required],
       telefono: ['600000000', Validators.required],
       direccion: [''],
-      localidad: [''],
-      cp: [''],
+      localidad: ['', Validators.required],
+      cp: ['', Validators.required, Validators.pattern('^[0-9]{5}$')], // validar 5 numeros desde el frontend
       observaciones: ['']
     });
   }
 
   cargarCiclos() {
     this.alumnosService.getCiclosTecnologia().subscribe(res => this.ciclos = res);
+  }
+
+  cargarEntidades() {
+    this.alumnosService.getEntidades().subscribe(res => this.entidades = res);
   }
 
   cargarAlumnos() {
@@ -119,26 +126,26 @@ export class AlumnosComponent implements OnInit {
   }
 
   confirmSave() {
+    if (this.alumnoForm.invalid) return;
+
     if (this.isEdit && this.currentId) {
-      // LLAMADA REAL AL SERVICIO PARA ACTUALIZAR
       this.alumnosService.updateAlumno(this.currentId, this.alumnoForm.value).subscribe({
         next: () => {
           this.cargarAlumnos();
           this.dialog.closeAll();
         },
-        error: (err) => alert("Error al editar: " + (err.error?.detail || 'Error desconocido'))
+        error: (err) => alert("Error al editar: " + (err.error?.detail || 'Error'))
       });
     } else {
-      // Lógica de crear (que ya tenías)
       this.alumnosService.addAlumno(this.alumnoForm.value).subscribe({
         next: () => {
           this.cargarAlumnos();
           this.dialog.closeAll();
         },
-        error: (err) => alert("Error al crear: " + (err.error?.detail || 'Error desconocido'))
+        error: (err) => alert("Error al crear: " + (err.error?.detail || 'Error'))
       });
     }
-}
+  }
 
   borrarAlumno(id: number) {
     if (confirm("¿Deseas eliminar el alumno?")) {

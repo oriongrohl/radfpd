@@ -13,11 +13,18 @@ import { MatPaginator } from '@angular/material/paginator';
 })
 
 export class VacantesComponent implements OnInit {
+
+  @ViewChild('asignacionesDialog') asignacionesDialog!: TemplateRef<any>;
+  alumnosAsignados: any[] = [];
+  alumnosLibres: any[] = [];
+  vacanteSeleccionada: any = null;
+  alumnoParaAsignar = new FormControl(null);
+
   @ViewChild('vacanteDialog') vacanteDialog!: TemplateRef<any>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   dataSource = new MatTableDataSource<any>([]);
-  displayedColumns: string[] = ['id_vacante', 'entidad', 'ciclo', 'curso', 'plazas', 'actions'];
+  displayedColumns: string[] = ['id_vacante', 'entidad', 'ciclo', 'curso', 'plazas', 'actions', 'asignaciones'];
 
   // Filtros
   idFilter = new FormControl('');
@@ -78,7 +85,7 @@ export class VacantesComponent implements OnInit {
     });
   }
 
-  openDialog(vacante?: any) {
+  openDialog(vacante?: any) { // abre el pop up de edicion
     this.isEdit = !!vacante;
     if (this.isEdit) {
       this.currentId = vacante.id_vacante;
@@ -152,4 +159,48 @@ export class VacantesComponent implements OnInit {
   closeDialog() {
     this.dialog.closeAll();
   }
+
+  openAsignacionesDialog(vacante: any) {
+    this.vacanteSeleccionada = vacante;
+    this.alumnoParaAsignar.reset();
+    this.cargarAsignacionesYLibres();
+    this.dialog.open(this.asignacionesDialog, { width: '600px' });
+  }
+
+  cargarAsignacionesYLibres() {
+    const idV = this.vacanteSeleccionada.id_vacante;
+    const idC = this.vacanteSeleccionada.id_ciclos;
+    const curso = this.vacanteSeleccionada.curso;
+
+    // Cargar alumnos ya asignados
+    this.vacanteService.getAsignacionesByVacante(idV).subscribe(res => this.alumnosAsignados = res);
+
+    // Cargar alumnos libres que coincidan en ciclo y curso
+    this.vacanteService.getAlumnosLibres(idC, curso).subscribe(res => this.alumnosLibres = res);
+  }
+
+  asignarAlumno() {
+    const idAlumno = this.alumnoParaAsignar.value;
+    if (!idAlumno) return;
+
+    this.vacanteService.asignarAlumno(this.vacanteSeleccionada.id_vacante, idAlumno).subscribe({
+      next: () => {
+        this.cargarAsignacionesYLibres(); // Recargar listas
+        this.listar(); // Actualizar tabla principal (contador de plazas)
+      },
+      error: (err) => alert(err.error?.detail || "Error al asignar")
+    });
+  }
+
+  desvincular(idAlumno: number) {
+    if (confirm("¿Desvincular a este alumno de la vacante?")) {
+      this.vacanteService.desvincularAlumno(this.vacanteSeleccionada.id_vacante, idAlumno).subscribe({
+        next: () => {
+          this.cargarAsignacionesYLibres();
+          this.listar();
+        }
+      });
+    }
+  }
+
 }

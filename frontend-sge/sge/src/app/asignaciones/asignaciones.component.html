@@ -1,3 +1,4 @@
+<h1>Asignaciones</h1>
 <div class="example-container mat-elevation-z8">
     <div class="example-table-container">
         <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort>
@@ -53,7 +54,7 @@
     <form [formGroup]="asigForm" (ngSubmit)="guardarAsignacion()">
         <div mat-dialog-content>
             <p>Selecciona un alumno sin asignar y una vacante con plazas disponibles.</p>
-            
+
             <mat-form-field class="w-100" appearance="outline">
                 <mat-label>Alumno disponible</mat-label>
                 <mat-select formControlName="id_alumno">

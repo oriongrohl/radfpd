@@ -10,6 +10,7 @@ class Provincia(Base):
 class Entidad(Base):
     __tablename__ = "sgi_entidades"
     id_entidad = Column(Integer, primary_key=True, autoincrement=True)
+    id_tipo_entidad = Column(Integer, nullable=False) # 1 Centro educativo
     entidad = Column(String(50), nullable=False)
 
 class Ciclo(Base):

@@ -16,13 +16,13 @@ export class AsignacionesComponent implements OnInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   dataSource = new MatTableDataSource<any>([]);
-  displayedColumns: string[] = ['alumno_nombre', 'empresa_nombre', 'ciclo', 'curso', 'acciones'];
+  displayedColumns: string[] = ['alumno_nombre', 'empresa_nombre', 'ciclo', 'curso', 'acciones']; // siguiendo el orden om
 
   asigForm!: FormGroup;
   alumnosLibres: any[] = [];
   vacantesDisponibles: any[] = [];
 
-  // Filtros de cabecera
+  // filtros de cabecera
   alumnoFilter = new FormControl('');
   empresaFilter = new FormControl('');
 
@@ -55,20 +55,20 @@ export class AsignacionesComponent implements OnInit {
   }
 
   applyFilter() {
-    this.dataSource.filter = JSON.stringify({ // Convertimos a minúsculas para una búsqueda case-insensitive
-      alumno: this.alumnoFilter.value?.toLowerCase() || '', // si el filtro está vacío, usamos cadena vacía para no filtrar
+    this.dataSource.filter = JSON.stringify({ // case-insensitive
+      alumno: this.alumnoFilter.value?.toLowerCase() || '', // si el filtro está vacío, usamos cadena vacía para que no afecte a la búsqueda
       empresa: this.empresaFilter.value?.toLowerCase() || '' // lo mismo para empresa
     });
   }
 
   cargarDatos() {
-    // 1. Tabla principal
+    // tabla principal
     this.asigService.getAsignaciones().subscribe(res => {
       this.dataSource.data = res;
       this.dataSource.paginator = this.paginator;
     });
 
-    // 2. Datos para el Pop-up
+    // datos para el pop up
     this.asigService.getAlumnosLibres().subscribe(res => this.alumnosLibres = res);
     this.vacanteService.getVacantes().subscribe(res => {
       // Solo mostramos vacantes con hueco
@@ -76,7 +76,7 @@ export class AsignacionesComponent implements OnInit {
     });
   }
 
-  openDialog() { // Reseteamos el formulario cada vez que se abre el diálogo
+  openDialog() { // reseteamos el formulario cada vez que se abre el diálogo
     this.asigForm.reset();
     this.dialog.open(this.asigDialog, { width: '500px' });
   }
@@ -87,7 +87,7 @@ export class AsignacionesComponent implements OnInit {
       this.asigService.asignar(id_vacante, id_alumno).subscribe({ // suscribimos con next y error para manejar ambos casos
         next: () => {
           this.cargarDatos();
-          this.dialog.closeAll(); // Cerramos el diálogo solo si la asignación fue exitosa
+          this.dialog.closeAll(); // cerramos el dialogo solo si la asignacion fue exitosa
         },
         error: (err) => alert(err.error.detail || 'Error en la asignación')
       });
@@ -95,7 +95,7 @@ export class AsignacionesComponent implements OnInit {
   }
 
   eliminar(id: number) {
-    if (confirm('¿Desvincular alumno de la empresa? El alumno volverá a estar disponible.')) {
+    if (confirm('¿Seguro que quiere desvincualar al alumno de la empresa?')) {
       this.asigService.borrarAsignacion(id).subscribe(() => this.cargarDatos());
     }
   }

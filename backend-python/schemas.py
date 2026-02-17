@@ -27,8 +27,8 @@ class AlumnoBase(BaseModel):
     observaciones: Optional[str] = None
 
 class AlumnoCreate(AlumnoBase): # POST 
-    # no incluimos el id_alumno pq al mandar el POST no existe
-    # No incluimos id_entidad porque el backend siempre pondrá 1
+    # no se incluye el id_alumno pq al mandar el POST no existe
+    # no id_entidad porque el backend siempre pondrá 1
     pass
 
 class Alumno(AlumnoBase): # lo que devuelve a angular
