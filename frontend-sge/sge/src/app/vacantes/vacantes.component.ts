@@ -85,9 +85,9 @@ export class VacantesComponent implements OnInit {
     });
   }
 
-  openDialog(vacante?: any) { // abre el pop up de edicion
+  openDialog(vacante?: any) { // abre el pop up de edicion o creacion dependiendo de si recibe un objeto vacante o no
     this.isEdit = !!vacante;
-    if (this.isEdit) {
+    if (this.isEdit) { // Si es edición, carga los datos en el formulario
       this.currentId = vacante.id_vacante;
       this.numAlumnosActuales = vacante.num_alumnos;
 
@@ -99,7 +99,7 @@ export class VacantesComponent implements OnInit {
         num_vacantes: vacante.num_vacantes,
         observaciones: vacante.observaciones || ''
       });
-    } else {
+    } else { // Si es creación, resetea el formulario
       this.currentId = null;
       this.numAlumnosActuales = 0;
       this.vacanteForm.reset({ curso: 1, num_vacantes: 1 });
@@ -107,39 +107,38 @@ export class VacantesComponent implements OnInit {
     this.dialog.open(this.vacanteDialog, { width: '500px' });
   }
 
-  confirmSave() {
-  const datos = this.vacanteForm.value;
+  confirmSave() { // se llama al hacer submit en el formulario del pop up, decide si crea o actualiza dependiendo de si estamos editando o creando una vacante
+    const datos = this.vacanteForm.value;
 
-  if (this.isEdit && this.currentId) {
-    // Validación solo de plazas
-    if (datos.num_vacantes < this.numAlumnosActuales) {
-      alert(`No puedes reducir a ${datos.num_vacantes} plazas. Hay ${this.numAlumnosActuales} alumnos asignados.`);
-      return;
+    if (this.isEdit && this.currentId) {
+      if (datos.num_vacantes < this.numAlumnosActuales) {
+        alert(`No puedes reducir a ${datos.num_vacantes} plazas. Hay ${this.numAlumnosActuales} alumnos asignados.`);
+        return;
+      }
+
+      this.vacanteService.actualizarVacante(this.currentId, datos).subscribe({
+        next: () => {
+          console.log("Vacante actualizada:", datos);
+          this.finalizarGuardado();
+        },
+        error: (err) => {
+          console.error(" Error:", err);
+          alert("Error: " + (err.error?.detail || "No se pudo actualizar"));
+        }
+      });
+    } else {
+      this.vacanteService.crearVacante(datos).subscribe({
+        next: () => {
+          console.log("Vacante creada:", datos);
+          this.finalizarGuardado();
+        },
+        error: (err) => {
+          console.error("  Error:", err);
+          alert("Error: " + (err.error?.detail || "No se pudo crear"));
+        }
+      });
     }
-
-    this.vacanteService.actualizarVacante(this.currentId, datos).subscribe({
-      next: () => {
-        console.log("Vacante actualizada:", datos);
-        this.finalizarGuardado();
-      },
-      error: (err) => {
-        console.error(" Error:", err);
-        alert("Error: " + (err.error?.detail || "No se pudo actualizar"));
-      }
-    });
-  } else {
-    this.vacanteService.crearVacante(datos).subscribe({
-      next: () => {
-        console.log("Vacante creada:", datos);
-        this.finalizarGuardado();
-      },
-      error: (err) => {
-        console.error("  Error:", err);
-        alert("Error: " + (err.error?.detail || "No se pudo crear"));
-      }
-    });
   }
-}
 
   finalizarGuardado() {
     this.listar();
@@ -170,29 +169,24 @@ export class VacantesComponent implements OnInit {
   cargarAsignacionesYLibres() {
     const idV = this.vacanteSeleccionada.id_vacante;
 
-    // 1. Aprovechamos GET /asignaciones y filtramos por vacante
     this.vacanteService.getAsignaciones().subscribe(res => {
-      // Filtramos solo las que pertenecen a ESTA vacante
       this.alumnosAsignados = res.filter(a => a.id_vacante === idV);
     });
-    
-    // 2. Cargamos alumnos libres (aprovechando tu endpoint /alumnos-libres)
+
     this.vacanteService.getAlumnosLibres().subscribe(res => {
-      // Además filtramos para que el alumno sea del mismo ciclo y curso que la vacante
-      this.alumnosLibres = res.filter(al => 
-        al.id_ciclo === this.vacanteSeleccionada.id_ciclos && 
+      this.alumnosLibres = res.filter(al =>
+        al.id_ciclo === this.vacanteSeleccionada.id_ciclos &&
         al.curso === this.vacanteSeleccionada.curso
       );
     });
   }
 
-  // El método desvincular ahora usa el ID de la asignación (id_vacante_x_alumno)
   desvincular(idAsig: number) {
     if (confirm("¿Desvincular a este alumno?")) {
       this.vacanteService.borrarAsignacion(idAsig).subscribe({
         next: () => {
-          this.cargarAsignacionesYLibres(); // Recargamos el pop-up
-          this.listar(); // Recargamos la tabla principal para actualizar el contador
+          this.cargarAsignacionesYLibres(); //recarga pop up
+          this.listar(); // recarga la tabla principal para actualizar el contador de plazas
         }
       });
     }
@@ -204,13 +198,13 @@ export class VacantesComponent implements OnInit {
 
     this.vacanteService.asignarAlumno(this.vacanteSeleccionada.id_vacante, idAlumno).subscribe({
       next: () => {
-        this.cargarAsignacionesYLibres(); // Recargar listas
-        this.listar(); // Actualizar tabla principal (contador de plazas)
+        this.cargarAsignacionesYLibres(); // recargar listas
+        this.listar(); // actualizar tabla principal
       },
       error: (err) => alert(err.error?.detail || "Error al asignar")
     });
   }
 
-  
+
 
 }

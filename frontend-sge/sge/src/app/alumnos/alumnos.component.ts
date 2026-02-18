@@ -45,7 +45,7 @@ export class AlumnosComponent implements OnInit {
     this.initForm();
   }
 
-  ngOnInit(): void {
+  ngOnInit(): void { //! Se ejecuta al cargar los alumnos
     this.cargarAlumnos();
     this.cargarCiclos();
     this.setupFilters();
@@ -87,13 +87,13 @@ export class AlumnosComponent implements OnInit {
       apellidos: ['', Validators.required],
       id_ciclo: [null, Validators.required],
       curso: [1, Validators.required],
-      id_entidad: [1],
+      id_entidad: [1], // ! valor por defecto al cargar el formulario
       id_provincia: [62],
       fecha_nacimiento: ['2000-01-01', Validators.required],
       telefono: ['600000000', Validators.required],
       direccion: [''],
       localidad: ['', Validators.required],
-      cp: ['', Validators.required, Validators.pattern('^[0-9]{5}$')], // validar 5 numeros desde el frontend
+      cp: ['', [Validators.required, Validators.pattern('^[0-9]{5}$')]], // validar 5 numeros desde el frontend
       observaciones: ['']
     });
   }
@@ -107,7 +107,7 @@ export class AlumnosComponent implements OnInit {
   }
 
   cargarAlumnos() {
-    this.alumnosService.getAlumnos().subscribe(res => {
+    this.alumnosService.getAlumnos().subscribe(res => { //! llamada al servicio usando subscribe porque es un observable, se ejecuta cuando llegan los datos
       this.dataSource.data = res;
       this.dataSource.paginator = this.paginator;
     });

@@ -27,6 +27,13 @@ class AlumnoBase(BaseModel):
     observaciones: Optional[str] = None
 
 class AlumnoCreate(AlumnoBase): # POST 
+    nif_nie: str
+    nombre: str
+    apellidos: str
+    id_ciclo: int
+    id_entidad: int
+    curso: int
+    fecha_nacimiento: date
     # no se incluye el id_alumno pq al mandar el POST no existe
     # no id_entidad porque el backend siempre pondrá 1
     pass

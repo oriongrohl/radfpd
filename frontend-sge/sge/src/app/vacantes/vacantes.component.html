@@ -71,7 +71,7 @@
   <mat-dialog-content>
     <div class="mb-4">
       <h4>Alumnos asignados ({{alumnosAsignados.length}} / {{vacanteSeleccionada?.num_vacantes}})</h4>
-      
+
       <mat-list>
         <mat-list-item *ngFor="let a of alumnosAsignados">
           <mat-icon mat-list-icon>person</mat-icon>
@@ -121,5 +121,54 @@
 </ng-template>
 
 <ng-template #vacanteDialog>
-  <p>Contenido del formulario de vacante...</p>
+    <h3 mat-dialog-title>{{ isEdit ? 'Editar' : 'Añadir' }} Vacante</h3>
+    <form [formGroup]="vacanteForm" (ngSubmit)="confirmSave()">
+        <div mat-dialog-content>
+            <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Empresa</mat-label>
+                <mat-select formControlName="id_entidad">
+                    <mat-option *ngFor="let e of entidades" [value]="e.id_entidad">
+                        {{e.entidad}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Ciclo</mat-label>
+                <mat-select formControlName="id_ciclos">
+                    <mat-option *ngFor="let c of ciclos" [value]="c.id_ciclo">
+                        {{c.ciclo}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <div class="row">
+                <mat-form-field class="col-6">
+                    <mat-label>Curso</mat-label>
+                    <mat-select formControlName="curso">
+                        <mat-option [value]="1">1º</mat-option>
+                        <mat-option [value]="2">2º</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="col-6">
+                    <mat-label>Nº Vacantes</mat-label>
+                    <input matInput type="number" formControlName="num_vacantes">
+                </mat-form-field>
+            </div>
+
+            <mat-form-field class="w-100">
+                <mat-label>Observaciones</mat-label>
+                <textarea matInput formControlName="observaciones"></textarea>
+            </mat-form-field>
+
+        </div>
+
+        <div mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="closeDialog()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!vacanteForm.valid">Guardar</button>
+        </div>
+
+    </form>
+
 </ng-template>

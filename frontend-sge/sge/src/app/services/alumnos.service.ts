@@ -16,7 +16,7 @@ export class AlumnosService {
     constructor(private http: HttpClient, private commonService: CommonService) { }
 
     getAlumnos(): Observable<any> {
-      // Usamos MI_API_LOCAL en lugar de URL_API q es la URL en la que se ejecuta el backend python INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+      //! Usamos MI_API_LOCAL en lugar de URL_API q es la URL en la que se ejecuta el backend python INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
       return this.http.get(`${this.FAST_API}/${this.ENDPOINT}`, { headers: this.commonService.headers });
     }
 
