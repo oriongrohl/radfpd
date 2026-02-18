@@ -123,7 +123,7 @@ export class VacantesComponent implements OnInit {
         this.finalizarGuardado();
       },
       error: (err) => {
-        console.error("❌ Error:", err);
+        console.error(" Error:", err);
         alert("Error: " + (err.error?.detail || "No se pudo actualizar"));
       }
     });
@@ -169,14 +169,33 @@ export class VacantesComponent implements OnInit {
 
   cargarAsignacionesYLibres() {
     const idV = this.vacanteSeleccionada.id_vacante;
-    const idC = this.vacanteSeleccionada.id_ciclos;
-    const curso = this.vacanteSeleccionada.curso;
 
-    // Cargar alumnos ya asignados
-    this.vacanteService.getAsignacionesByVacante(idV).subscribe(res => this.alumnosAsignados = res);
+    // 1. Aprovechamos GET /asignaciones y filtramos por vacante
+    this.vacanteService.getAsignaciones().subscribe(res => {
+      // Filtramos solo las que pertenecen a ESTA vacante
+      this.alumnosAsignados = res.filter(a => a.id_vacante === idV);
+    });
+    
+    // 2. Cargamos alumnos libres (aprovechando tu endpoint /alumnos-libres)
+    this.vacanteService.getAlumnosLibres().subscribe(res => {
+      // Además filtramos para que el alumno sea del mismo ciclo y curso que la vacante
+      this.alumnosLibres = res.filter(al => 
+        al.id_ciclo === this.vacanteSeleccionada.id_ciclos && 
+        al.curso === this.vacanteSeleccionada.curso
+      );
+    });
+  }
 
-    // Cargar alumnos libres que coincidan en ciclo y curso
-    this.vacanteService.getAlumnosLibres(idC, curso).subscribe(res => this.alumnosLibres = res);
+  // El método desvincular ahora usa el ID de la asignación (id_vacante_x_alumno)
+  desvincular(idAsig: number) {
+    if (confirm("¿Desvincular a este alumno?")) {
+      this.vacanteService.borrarAsignacion(idAsig).subscribe({
+        next: () => {
+          this.cargarAsignacionesYLibres(); // Recargamos el pop-up
+          this.listar(); // Recargamos la tabla principal para actualizar el contador
+        }
+      });
+    }
   }
 
   asignarAlumno() {
@@ -192,15 +211,6 @@ export class VacantesComponent implements OnInit {
     });
   }
 
-  desvincular(idAlumno: number) {
-    if (confirm("¿Desvincular a este alumno de la vacante?")) {
-      this.vacanteService.desvincularAlumno(this.vacanteSeleccionada.id_vacante, idAlumno).subscribe({
-        next: () => {
-          this.cargarAsignacionesYLibres();
-          this.listar();
-        }
-      });
-    }
-  }
+  
 
 }

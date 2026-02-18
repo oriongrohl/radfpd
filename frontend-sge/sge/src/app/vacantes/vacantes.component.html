@@ -1,18 +1,91 @@
+<h1>Vacantes</h1>
+
+<div class="example-container mat-elevation-z8">
+  <div class="example-table-container">
+    <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" matSort>
+
+      <ng-container matColumnDef="id_vacante">
+        <th mat-header-cell *matHeaderCellDef> Id </th>
+        <td mat-cell *matCellDef="let v"> {{v.id_vacante}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="entidad">
+        <th mat-header-cell *matHeaderCellDef> Empresa </th>
+        <td mat-cell *matCellDef="let v"> {{v.entidad_nombre}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="ciclo">
+        <th mat-header-cell *matHeaderCellDef> Ciclo </th>
+        <td mat-cell *matCellDef="let v"> {{v.ciclo_nombre}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="curso">
+        <th mat-header-cell *matHeaderCellDef> Curso </th>
+        <td mat-cell *matCellDef="let v" class="text-center"> {{v.curso}}º </td>
+      </ng-container>
+
+      <ng-container matColumnDef="plazas">
+        <th mat-header-cell *matHeaderCellDef> Alumnos/Plazas </th>
+        <td mat-cell *matCellDef="let v" class="text-center">
+          <span [style.color]="v.num_alumnos >= v.num_vacantes ? 'red' : 'inherit'">
+            {{v.num_alumnos}} / {{v.num_vacantes}}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>
+          <button mat-icon-button (click)="openDialog()">
+            <mat-icon>add_circle</mat-icon>
+          </button>
+        </th>
+        <td mat-cell *matCellDef="let v">
+          <button mat-icon-button (click)="openDialog(v)">
+            <mat-icon>mode_edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteVacante(v)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="asignaciones">
+        <th mat-header-cell *matHeaderCellDef> Asignaciones </th>
+        <td mat-cell *matCellDef="let v">
+          <button mat-icon-button color="accent" (click)="openAsignacionesDialog(v)">
+            <mat-icon>assignment_ind</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </div>
+  <mat-paginator [pageSizeOptions]="[5, 10, 25]"></mat-paginator>
+</div>
+
 <ng-template #asignacionesDialog>
   <h2 mat-dialog-title>Asignaciones: {{vacanteSeleccionada?.entidad_nombre}}</h2>
 
   <mat-dialog-content>
     <div class="mb-4">
       <h4>Alumnos asignados ({{alumnosAsignados.length}} / {{vacanteSeleccionada?.num_vacantes}})</h4>
+      
       <mat-list>
         <mat-list-item *ngFor="let a of alumnosAsignados">
           <mat-icon mat-list-icon>person</mat-icon>
-          <div mat-line>{{a.nombre}} {{a.apellidos}}</div>
-          <button mat-icon-button color="warn" (click)="desvincular(a.id_alumno)">
-            <mat-icon>person_remove</mat-icon>
-          </button>
+          <div mat-line class="d-flex justify-content-between align-items-center">
+            <span>{{a.alumno_nombre}}</span>
+            <button mat-icon-button color="warn" (click)="desvincular(a.id_vacante_x_alumno)">
+              <mat-icon>person_remove</mat-icon>
+            </button>
+          </div>
         </mat-list-item>
-        <p *ngIf="alumnosAsignados.length === 0" class="text-muted">No hay alumnos asignados aún.</p>
+
+        <p *ngIf="alumnosAsignados.length === 0" class="text-muted mt-2">
+          No hay alumnos asignados aún.
+        </p>
       </mat-list>
     </div>
 
@@ -21,8 +94,8 @@
     <div class="mt-4" *ngIf="alumnosAsignados.length < vacanteSeleccionada?.num_vacantes">
       <h4>Asignar nuevo alumno</h4>
       <div class="row align-items-center">
-        <mat-form-field class="col-8">
-          <mat-label>Alumnos disponibles ({{vacanteSeleccionada?.ciclo_nombre}} {{vacanteSeleccionada?.curso}}º)</mat-label>
+        <mat-form-field class="col-8" appearance="outline">
+          <mat-label>Alumnos disponibles</mat-label>
           <mat-select [formControl]="alumnoParaAsignar">
             <mat-option *ngFor="let al of alumnosLibres" [value]="al.id_alumno">
               {{al.nombre}} {{al.apellidos}}
@@ -30,7 +103,7 @@
           </mat-select>
         </mat-form-field>
         <div class="col-4">
-          <button mat-raised-button color="accent" [disabled]="!alumnoParaAsignar.value" (click)="asignarAlumno()">
+          <button mat-raised-button color="primary" [disabled]="!alumnoParaAsignar.value" (click)="asignarAlumno()">
             Asignar
           </button>
         </div>
@@ -38,11 +111,15 @@
     </div>
 
     <div class="alert alert-warning mt-2" *ngIf="alumnosAsignados.length >= vacanteSeleccionada?.num_vacantes">
-      Cupo máximo alcanzado. No se pueden añadir más alumnos.
+      Cupo máximo alcanzado.
     </div>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
     <button mat-button (click)="closeDialog()">Cerrar</button>
   </mat-dialog-actions>
+</ng-template>
+
+<ng-template #vacanteDialog>
+  <p>Contenido del formulario de vacante...</p>
 </ng-template>

@@ -80,7 +80,7 @@ def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session =
     asignacion = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == id_alumno).first()
     if asignacion:
         vacante = db.query(models.Vacante).get(asignacion.id_vacante)
-        if vacante and (a.id_ciclo != vacante.id_ciclos or a.curso != vacante.curso):
+        if vacante and (a.id_ciclo != vacante.id_ciclos or a.curso != vacante.curso): # type: ignore
             raise HTTPException(status_code=400, detail="No puedes cambiar el ciclo o curso porque el alumno ya está asignado a una vacante que no coincide con esos datos.")
     
     db.commit()
@@ -157,7 +157,7 @@ def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Sessio
         asignaciones = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == id_vacante).all()
         for a in asignaciones:
             alumno = db.query(models.Alumno).get(a.id_alumno)
-            if alumno and (alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso):
+            if alumno and (alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso): # type: ignore
                 raise HTTPException(status_code=400, detail="No puedes cambiar el ciclo o curso porque ya hay alumnos asignados que no coinciden con esos datos.")
     
     db.commit()
@@ -212,7 +212,7 @@ def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_d
     if not alumno:
         raise HTTPException(status_code=404, detail="El alumno no existe.")
     
-    if alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso:
+    if alumno.id_ciclo != v.id_ciclos or alumno.curso != v.curso: # type: ignore
         raise HTTPException(status_code=400, detail="El ciclo o curso del alumno no coincide con los de la vacante.")
     
     # 3. Crear asignacion
@@ -240,3 +240,29 @@ def leer_ciclos_completo(db: Session = Depends(get_db)):
 @app.get("/entidades-centros")
 def leer_centros_educativos(db: Session = Depends(get_db)):
     return db.query(models.Entidad).filter(models.Entidad.id_tipo_entidad == 1).all() # muestra solo entidades que son centros educativos (id_tipo_entidad = 1)
+
+@app.get("/asignaciones/vacante/{id_vacante}")
+def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db)):
+    # Hacemos un JOIN entre VacanteAlumno y Alumno para obtener los nombres
+    alumnos_asignados = (
+        db.query(models.Alumno)
+        .join(models.VacanteAlumno, models.Alumno.id_alumno == models.VacanteAlumno.id_alumno)
+        .filter(models.VacanteAlumno.id_vacante == id_vacante)
+        .all()
+    )
+    
+    return [{
+        "id_alumno": a.id_alumno,
+        "nombre": a.nombre,
+        "apellidos": a.apellidos,
+        "nif_nie": a.nif_nie
+    } for a in alumnos_asignados]
+
+@app.delete("/asignaciones/vacante/{id_vacante}/alumno/{id_alumno}")
+def borrar_asignacion_especifica(id_vacante: int, id_alumno: int, db: Session = Depends(get_db)):
+    db.query(models.VacanteAlumno).filter(
+        models.VacanteAlumno.id_vacante == id_vacante,
+        models.VacanteAlumno.id_alumno == id_alumno
+    ).delete()
+    db.commit()
+    return {"status": "ok"}

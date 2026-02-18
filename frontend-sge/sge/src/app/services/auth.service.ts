@@ -18,7 +18,7 @@ export class AuthService {
     const body = JSON.stringify(data);
     return this.http.post<ApiResponse>(`${URL_API}/login.php`, body);
   }
-
+  //! is authenticate dusa el auth guard
   public async isAuthenticated(url: string): Promise<boolean> { // Verificar si la ruta es alumnos, vacantes o asignaciones, si es así, permitir el acceso sin verificar el token
 
     let rutaSeleccionada: string;

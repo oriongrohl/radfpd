@@ -71,9 +71,9 @@ const routes: Routes = [
 //  { path: 'unidades', loadChildren: () => import('./entidades/datos-entidad/unidades/unidades.module').then(m => m.UnidadesModule) },
   { path: 'motivos-nodual', loadChildren: () => import('./motivos-nodual/motivos-nodual.module').then(m => m.MotivosNodualModule) },
   { path: 'unidades', loadChildren: () => import('./unidades/unidades.module').then(m => m.UnidadesModule) },
-  { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule), canActivate: [AuthGuard] },
+  { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule)},
   // { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule) },
-  { path: 'vacantes', loadChildren: () => import('./vacantes/vacantes.module').then(m => m.VacantesModule), canActivate: [AuthGuard]  },
+  { path: 'vacantes', loadChildren: () => import('./vacantes/vacantes.module').then(m => m.VacantesModule) },
   { path: 'asignaciones', loadChildren: () => import('./asignaciones/asignaciones.module').then(m => m.AsignacionesModule) }, //! , canActivate: [AuthGuard]
 
 //  { path: 'ciclos-entidad', loadChildren: () => import('./entidades/datos-entidad/ciclos-entidad/ciclos-entidad.module').then(m => m.CiclosEntidadModule) },

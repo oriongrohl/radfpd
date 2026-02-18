@@ -31,22 +31,22 @@ export class VacantesService {
         return this.http.delete<any>(`${this.FAST_API}/${id}`);
     }
 
-    getAsignacionesByVacante(idVacante: number): Observable<any[]> {
-      return this.http.get<any[]>(`${this.FAST_API}/asignaciones/vacante/${idVacante}`);
+    getAsignaciones(): Observable<any[]> {
+      return this.http.get<any[]>(`http://127.0.0.1:8000/asignaciones`);
     }
 
-    getAlumnosLibres(idCiclo: number, curso: number): Observable<any[]> {
-      // Filtramos por ciclo y curso para que coincidan con la vacante
-      return this.http.get<any[]>(`${this.FAST_API}/alumnos/libres?id_ciclo=${idCiclo}&curso=${curso}`);
+    borrarAsignacion(idAsig: number): Observable<any> {
+      return this.http.delete(`http://127.0.0.1:8000/asignaciones/${idAsig}`);
+    }
+
+    getAlumnosLibres(): Observable<any[]> {
+      return this.http.get<any[]>(`http://127.0.0.1:8000/alumnos-libres`);
     }
 
     asignarAlumno(idVacante: number, idAlumno: number): Observable<any> {
-      return this.http.post(`${this.FAST_API}/asignaciones`, { id_vacante: idVacante, id_alumno: idAlumno });
+      // el backend espera {id_vacante, id_alumno} en el body
+      return this.http.post(`http://127.0.0.1:8000/asignaciones`, { id_vacante: idVacante, id_alumno: idAlumno });
     }
 
-    desvincularAlumno(idVacante: number, idAlumno: number): Observable<any> {
-      // Ajusta la ruta según tu backend (usualmente un DELETE con ambos IDs)
-      return this.http.delete(`${this.FAST_API}/asignaciones/${idVacante}/${idAlumno}`);
-    }
 
 }
