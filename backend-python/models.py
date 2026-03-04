@@ -69,3 +69,12 @@ class VacanteAlumno(Base):
     #  relaciones para acceder a los nombres
     alumno = relationship("Alumno", back_populates="asignaciones_detalles")
     vacante = relationship("Vacante", back_populates="asignaciones_v")
+
+class Usuario(Base):
+    __tablename__ = "sgi_usuarios"
+
+    id_usuario = Column(Integer, primary_key=True, index=True)
+    usuario = Column(String(100), unique=True, nullable=False)
+    pass_user = Column(String(100), nullable=False)
+    nombre_publico = Column(String(255))
+    habilitado = Column(Integer) # tinyint(1) se mapea como Integer o Boolean

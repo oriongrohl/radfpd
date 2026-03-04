@@ -18,24 +18,38 @@ export class AuthService {
     const body = JSON.stringify(data);
     return this.http.post<ApiResponse>(`${URL_API}/login.php`, body);
   }
+  
   //! is authenticate dusa el auth guard
-  public async isAuthenticated(url: string): Promise<boolean> { // Verificar si la ruta es alumnos, vacantes o asignaciones, si es así, permitir el acceso sin verificar el token
+  public async isAuthenticated(url: string): Promise<boolean> { 
 
-    let rutaSeleccionada: string;
-    let rutaSeleccionadaAlumnos = url.substring(1).split('/')[0]; //! Obtenemos la primera parte de la ruta para verificar si es alumnos, vacantes o asignaciones
-    if (rutaSeleccionadaAlumnos === 'alumnos' || rutaSeleccionadaAlumnos === 'vacantes' || rutaSeleccionadaAlumnos === 'asignaciones') { //! Si la ruta es alumnos vacantes o asignaciones, permitimos el acceso sin verificar el token
-    return true;
+    // verificar si esta el token de python en el localstorage, si no esta, ni lo intentamos, no esta autenticado
+    const tokenPython = localStorage.getItem('token_python');
+    if (!tokenPython) {
+        return false; // Si no hay token, ni lo intentamos, no está autenticado
     }
 
-    const promise = new Promise<boolean>((resolve, reject) => { // Verificar el token para las demás rutas
-      rutaSeleccionada = url.substring(1); // Obtenemos la ruta seleccionada sin el primer caracter '/' para enviarla al backend y verificar si el usuario tiene permisos para acceder a esa ruta
-      rutaSeleccionada = rutaSeleccionada.split('/')[0];
-      this.http.get<ApiResponse>(`${URL_API}/check_usuarios.php?ruta=${ rutaSeleccionada }`,  { headers: this.commonService.getHeaders() } ) // Enviamos la ruta seleccionada al backend para verificar si el usuario tiene permisos para acceder a esa ruta
-      .subscribe((response: ApiResponse) => {
-      resolve(response.ok);
-      });
+    // comprobamos si es una ruta python
+    let ruta = url.substring(1).split('/')[0];
+    if (ruta === 'alumnos' || ruta === 'vacantes' || ruta === 'asignaciones') {
+        return true; // ok pq el  token existe
+    }
+
+    // logica de las rutas php
+    return new Promise<boolean>((resolve) => {
+        this.http.get<ApiResponse>(`${URL_API}/check_usuarios.php?ruta=${ruta}`, { headers: this.commonService.getHeaders() })
+            .subscribe({
+                next: (response) => resolve(response.ok),
+                error: () => resolve(false)
+            });
     });
-    return promise;
+  }
+
+  //! LOGIN PARA PYTHON (Django Rest Framework)
+  doLoginPython(data: any) { //! llamada al endpoint para obtener el token (comunicacion con el backend)
+    return this.http.post<any>( 
+      'http://127.0.0.1:8000/login',  // endpoint de login del backend de python, que nos devuelve el token 
+      data
+    );
   }
 
   doLogout() {
@@ -65,4 +79,9 @@ export class AuthService {
     return this.http.put<ApiResponse>(`${URL_API}/reset_pass.php`, body);
 
   }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
 }

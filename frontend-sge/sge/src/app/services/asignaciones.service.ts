@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CommonService } from '../shared/common.service';
 
 @Injectable({
     providedIn: 'root'
@@ -9,16 +10,17 @@ import { Observable } from 'rxjs';
     // URL backend FastAPI
     private FAST_API = 'http://127.0.0.1:8000';
 
-    constructor(private http: HttpClient) { }
-
+    constructor(private http: HttpClient, private commonService: CommonService) { }
+    
+    
     // obtener todas las asignaciones actuales
     getAsignaciones(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.FAST_API}/asignaciones`);
+        return this.http.get<any[]>(`${this.FAST_API}/asignaciones`, this.commonService.headersPython);
     }
 
     // obtener solo los alumnos que no tienen empresa
     getAlumnosLibres(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.FAST_API}/alumnos-libres`);
+        return this.http.get<any[]>(`${this.FAST_API}/alumnos-libres`, this.commonService.headersPython);
     }
 
     // Crear una nueva asignacion corregido por fin inshallah
@@ -32,11 +34,11 @@ import { Observable } from 'rxjs';
         };
 
         // Enviamos el body como segundo argumento
-        return this.http.post(url, body);
+        return this.http.post(url, body, this.commonService.headersPython);
     }
 
     // eliminar una asignacion
     borrarAsignacion(id_asig: number): Observable<any> {
-        return this.http.delete(`${this.FAST_API}/asignaciones/${id_asig}`);
+        return this.http.delete(`${this.FAST_API}/asignaciones/${id_asig}`, this.commonService.headersPython);
     }
 }

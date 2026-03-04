@@ -1,5 +1,16 @@
+import hashlib
+import uuid
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Header
+import os
 from sqlalchemy.orm import Session
+
+from datetime import datetime, timedelta
+from jose import ExpiredSignatureError, JWTError, jwt #! IMPORTACION DE JSON WEB TOKENS 
+from fastapi import Header, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 # para usar funciones SQL como COUNT en consultas con SQLAlchemy.ELIJO SQL ALCHEMY POR QUE ME PERMITE ESCRIBIR CONSULTAS DE MANERA MÁS PYTHONICA Y ORIENTADA A OBJETOS, EN LUGAR DE ESCRIBIR SQL PURO. ESTO HACE QUE EL CÓDIGOS SEA MÁS LEGIBLE Y MANTENIBLE, ADEMÁS DE PROPORCIONAR UNA CAPA DE ABSTRACCIÓN SOBRE LA BASE DE DATOS, LO QUE FACILITA EL CAMBIO DE MOTOR DE BASE DE DATOS EN EL FUTURO SI FUERA NECESARIO.
 #? sqlalchemy permite ABSTRACCION DE LA BDD MAS PYTHONICO Y ORIENTADO A OBJETOS en vez de SQL puro. 
 # Esto hace que el código sea más legible y mantenible, además de proporcionar una capa de abstracción sobre la base de datos, lo que facilita el cambio de motor de base de datos en el futuro si fuera necesario.
@@ -8,14 +19,16 @@ from typing import List
 import models, schemas
 from database import SessionLocal, engine
 from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SGE - RAD FPD") #? Título de la API (http://localhost:8000/docs)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], #? SOLO EN DESARROLLO Configuracion CORS para permitir comunicacion con el frontend sin cuestionar origines de las peticiones (solo en desarrollo)
+    allow_origins=["http://localhost:4200",
+        "http://127.0.0.1:4200"],
+#? SOLO EN DESARROLLO Configuracion CORS para permitir comunicacion con el frontend sin cuestionar origines de las peticiones (solo en desarrollo)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,19 +41,89 @@ def get_db(): # CONEXION BDD: cada vez que una ruta necesite acceder a la base d
     try: yield db # La palabra clave yield convierte esta función en un generador, lo que permite usarla como una dependencia en FastAPI. Cuando una ruta depende de get_db, FastAPI ejecuta el código antes del yield para obtener la sesión de DB y luego ejecuta el código después del yield (en este caso, cerrar la sesión) automáticamente al finalizar la petición, incluso si ocurre un error durante el procesamiento de la ruta.
     finally: db.close() # SE CIERRA la sesión de base de datos al finalizar la petición para liberar recursos y evitar conexiones abiertas innecesariamente. Esto es importante para mantener el rendimiento y la estabilidad de la aplicación, especialmente cuando hay muchas peticiones concurrentes.
 
-def verificar_token(authorization: str = Header(None)): # DEPENDENCIA DE AUTENTICACION: Si no se envia el token lanza HTTP 401 (no está autorizado)
-    if authorization is None: # comprueba existencia del token que significa que el usuario está autenticado. Si no se envía el token, se lanza una excepción HTTP 401 (Unauthorized) indicando que el token no fue enviado. Esto es una medida de seguridad para proteger las rutas que requieren autenticación, asegurando que solo los usuarios autorizados puedan acceder a ellas.
-        raise HTTPException(status_code=401, detail="Token no enviado")
-    return authorization # UN TOKEN ES UNA CADENA DE TEXTO QUE SE UTILIZA PARA VERIFICAR LA IDENTIDAD DE UN USUARIO O APLICACIÓN. EN ESTE CASO, SE ESPERA QUE EL TOKEN SE ENVÍE EN EL ENCABEZADO DE AUTORIZACIÓN DE LA PETICIÓN HTTP. SI EL TOKEN ESTÁ PRESENTE, LA FUNCIÓN LO DEVUELVE PARA QUE PUEDA SER UTILIZADO EN LAS RUTAS PROTEGIDAS PARA VERIFICAR LA AUTENTICIDAD DEL USUARIO O APLICACIÓN QUE REALIZA LA PETICIÓN. SI EL TOKEN NO ESTÁ PRESENTE, SE LANZA UNA EXCEPCIÓN HTTP 401 (UNAUTHORIZED) INDICANDO QUE EL TOKEN NO FUE ENVIADO, LO QUE IMPLICA QUE EL USUARIO NO ESTÁ AUTORIZADO PARA ACCEDER A ESA RUTA.
+# ! LOGIN
+class LoginRequest(BaseModel): # modelo de datos para la solicitud de login
+    username: str
+    password: str
 
-# --- AUXILIARES (Para Desplegables) ---
 
+@app.post("/login") #! ruta de login que recibe un objeto con username y password, verifica las credenciales y devuelve un token JWT si son correctas. El token se puede usar para autenticar futuras peticiones a rutas protegidas.
+def login(user: LoginRequest, db: Session = Depends(get_db)):
+    # 1. Buscamos el usuario
+    db_user = db.query(models.Usuario).filter(models.Usuario.usuario == user.username).first() # !consulta a la tabla usuarios que devuelve el primer usuario que coincida con el nombre de usuario proporcionado en la solicitud. Si no se encuentra ningún usuario con ese nombre, db_user será None.
+
+    if not db_user: # si es none salta error 401 no autorizado
+        raise HTTPException(status_code=401, detail="Usuario no encontrado en BDD")
+    
+    # 2. comparar contraseña
+    # .strip() para eliminar espacios accidentales
+    if str(db_user.pass_user).strip() != user.password.strip():
+        #! comparamos contraseña cifrando la que viene de Angular pq sino pasa algo como esto Victoria1928 = b9266f26d51e509ffc0ade6f28472843 (basado en experiencia personal)
+        password_angular = user.password.strip()
+        password_cifrada = hashlib.md5(password_angular.encode()).hexdigest() #? hardcodear la contraseña de angular para comparar bien
+
+        if str(db_user.pass_user).strip() != password_cifrada: #! si no son la misma salta 401
+            raise HTTPException(status_code=401, detail="Password incorrecto")
+
+    token = crear_token({"sub": str(db_user.usuario)}) # se crea el token JWT con el nombre de usuario
+
+    return {
+        "ok": True,
+        "access_token": token, #! el termino access_token tiene que coincidir conn angular
+        "data": { # datos de la base de datos
+            "token": token,
+            "access_token": token, # lo he puesto dos veces pq no me acuerdo de si el frontend lo espera en data o fuera 
+            "usuario": db_user.usuario,
+            "nombre_publico": db_user.nombre_publico or db_user.usuario, # si el nombre público no está definido, se muestra el nombre de usuario en su lugar
+            "opcion": "dashboard",
+            "grupo": "admin",
+            "accion": "dashboard"
+        }
+    }
+
+
+SECRET_KEY_raw = os.environ.get("SECRET_KEY") # !obtenemos la clave secreta de .env para firmar los tokens JWT
+if SECRET_KEY_raw is None: # si no esta definida lanzamos un error
+    raise RuntimeError("SECRET_KEY environment variable is required") # esto evita un type: ignore 
+SECRET_KEY: str = SECRET_KEY_raw # ya hemos garantizaddo que sesa un string
+
+ALGORITHM = "HS256" # algoritmo de cifrado para los tokens JWT es el mas comun y seguro para esta casuistica
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 # tiempo de expiracion del token en minutos
+
+def crear_token(data: dict, expires_minutes: int = 60): # funcion crear token donde dict es la informacion del token
+    to_encode = data.copy() # hacemos una copia del diccionario para no modificar el original
+    now = datetime.utcnow() # fecha y hora actual
+    to_encode.update({ # agregamos a la información del token los campos estándar de JWT: iat (issued at), exp (expiration) y jti (JWT ID)
+        "iat": now, # fecha de emisión del token
+        "exp": now + timedelta(minutes=expires_minutes), # fecha de expiracion del token: la hora de creacion + el tiempo de vida
+        "jti": str(uuid.uuid4()) # id unico de token generado automagicamente con uuid4
+    })
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) # codificacion del token con jwt que es la libreria que nos permite crear y verificar tokens JWT
+
+security = HTTPBearer()
+
+#!!!!!!! METODO verificar_token SE USA EN TODOS LOS ENDPOINTS protegidos para verificar que el token JWT sea y siga siendo válido antes de permitir hacer nada
+def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    token = creds.credentials #! obtenemos el token del header Authorization (el frontend lo envía automáticamente en cada petición después de hacer login)
+    try: 
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # ?decodificamos el token con la misma clave secreta y algoritmo de creacion
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    user = payload.get("sub") # !obtenemos el campo "sub" (sub es un estandar internaciona) del payload que es donde guardamos el nombre de usuario al crear el token
+    if not user: # si no hay campo sub es q el user no es valido
+        raise HTTPException(status_code=401, detail="Token sin subject")
+    return payload  # o devuelve user info: {"username": user, "roles": payload.get("roles")} 
+
+
+# auxiliares desplegables
 @app.get("/ciclos", response_model=List[schemas.Ciclo])
 def leer_ciclos_tecnologia(solo_tecnologia: bool = False, db: Session = Depends(get_db)):
     # Solo devuelve ciclos con ID entre 1 y 9 (Tecnología)
     return db.query(models.Ciclo).filter(models.Ciclo.id_ciclo >= 1, models.Ciclo.id_ciclo <= 9).all()
 
-@app.get("/alumnos-libres", response_model=List[schemas.Alumno])
+@app.get("/alumnos/libres", response_model=List[schemas.Alumno])
 def leer_alumnos_libres(db: Session = Depends(get_db)):
     #? evitar asignaciones duplicadas
     ocupados = db.query(models.VacanteAlumno.id_alumno).subquery() #! OCUPADOS = alumnos cuyo id NO ESTÁ en Asignacion.id_alumno
@@ -62,7 +145,7 @@ def leer_alumnos(db: Session = Depends(get_db)):
     return db_alumnos #? enriquecimiento de datos para mostrar nombre en vez de id al mandandolo al frontend directamente
 
 @app.post("/alumnos", response_model=schemas.Alumno)
-def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db)):
+def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     if not (1 <= alumno.id_ciclo <= 9): # solo tecnología
         raise HTTPException(status_code=400, detail="Solo se permiten ciclos de tecnología (1-9)")
     # comprobar que el dni tenga formato correcto (8 dígitos + letra)
@@ -81,7 +164,7 @@ def crear_alumno(alumno: schemas.AlumnoCreate, db: Session = Depends(get_db)):
     return nuevo_alumno
 
 @app.put("/alumnos/{id_alumno}", response_model=schemas.Alumno)
-def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session = Depends(get_db)):
+def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     a = db.query(models.Alumno).get(id_alumno)
     if not a: raise HTTPException(status_code=404)
     for key, value in datos.model_dump().items():
@@ -101,7 +184,7 @@ def actualizar_alumno(id_alumno: int, datos: schemas.AlumnoCreate, db: Session =
     return a
 
 @app.delete("/alumnos/{id_alumno}")
-def borrar_alumno(id_alumno: int, db: Session = Depends(get_db)):
+def borrar_alumno(id_alumno: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Borrar primero asignaciones
     db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == id_alumno).delete() # ! Primero se eliminan las asignaciones relacionadas con el alumno para evitar errores de integridad referencial (foreign key) al intentar borrar un alumno que todavía está asignado a una vacante. Esto asegura que no queden registros huérfanos en la tabla de asignaciones que hagan referencia a un alumno que ya no existe.
     db.query(models.Alumno).filter(models.Alumno.id_alumno == id_alumno).delete() # borra alumno
@@ -147,7 +230,7 @@ def leer_vacantes_disponibles(db: Session = Depends(get_db)):
 
 
 @app.post("/vacantes", response_model=schemas.Vacante)
-def crear_vacante(vacante: schemas.VacanteCreate, db: Session = Depends(get_db)):
+def crear_vacante(vacante: schemas.VacanteCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     nueva = models.Vacante(**vacante.model_dump())
     db.add(nueva)
     db.commit()
@@ -155,7 +238,7 @@ def crear_vacante(vacante: schemas.VacanteCreate, db: Session = Depends(get_db))
     return nueva
 
 @app.put("/vacantes/{id_vacante}")
-def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Session = Depends(get_db)):
+def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     v = db.query(models.Vacante).get(id_vacante)
     if not v: raise HTTPException(status_code=404)
     # si se intenta reducir el número de vacantes, verificar que no haya ya más alumnos asignados de los que se quieren permitir
@@ -180,7 +263,7 @@ def actualizar_vacante(id_vacante: int, datos: schemas.VacanteCreate, db: Sessio
     return v
 
 @app.delete("/vacantes/{id_vacante}")
-def borrar_vacante(id_vacante: int, db: Session = Depends(get_db)):
+def borrar_vacante(id_vacante: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Impedir borrar si hay alumnos asignados (opcional, pero recomendado)
     tiene_alumnos = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante == id_vacante).first()
     if tiene_alumnos: #! no se puede borrar una vacante si tiene alumnos asignados
@@ -206,7 +289,7 @@ def leer_asignaciones(db: Session = Depends(get_db)): #! evita joins complejos
     } for a in asigs]
 
 @app.post("/asignaciones")
-def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_db)):
+def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # 1 verificar si el alumno ya está en cualquier asignación
     # (El unique=True en el modelo ya lo protege, pero esto da un error limpio al frontend)
     existe = db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_alumno == asig.id_alumno).first()
@@ -237,7 +320,7 @@ def crear_asignacion(asig: schemas.AsignacionCreate, db: Session = Depends(get_d
     return {"status": "ok", "message": "Asignación realizada correctamente"}
 
 @app.delete("/asignaciones/{id_asig}")
-def borrar_asignacion(id_asig: int, db: Session = Depends(get_db)):
+def borrar_asignacion(id_asig: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     db.query(models.VacanteAlumno).filter(models.VacanteAlumno.id_vacante_x_alumno == id_asig).delete()
     db.commit()
     return {"status": "ok"}
@@ -274,7 +357,7 @@ def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db)):
     } for a in alumnos_asignados]
 
 @app.delete("/asignaciones/vacante/{id_vacante}/alumno/{id_alumno}")
-def borrar_asignacion_especifica(id_vacante: int, id_alumno: int, db: Session = Depends(get_db)):
+def borrar_asignacion_especifica(id_vacante: int, id_alumno: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     db.query(models.VacanteAlumno).filter(
         models.VacanteAlumno.id_vacante == id_vacante,
         models.VacanteAlumno.id_alumno == id_alumno

@@ -6,16 +6,28 @@ import { CookieService } from 'ngx-cookie-service';
   providedIn: 'root'
 })
 export class CommonService {
-  headers: HttpHeaders;
 
-  constructor(private cookieService: CookieService) {
-    this.headers = new HttpHeaders({
-      'Content-Type':  'application/json',
-      Authorization : `Bearer ${localStorage.getItem('token')}`
+  constructor(private cookieService: CookieService) {  }
+
+  
+  //! headerspython es un getter que devuelve los headers con el token incluido para las peticiones al backend de python 
+  get headersPython() {
+    const token = localStorage.getItem('token_python'); //! buscamos el token en localstorage que se ha debido de almacenar en login.compontent.ts
+    let headers = new HttpHeaders({ 
+        'Content-Type': 'application/json' // aclaramos quue el contenido es un json para que el backend lo pueda interpretar correctamente
     });
-
-    // console.log(this.cookieService.get('token'));
-   }
+    
+    //! A TENER EN CUENTA EL BACKEND
+    /* * 
+        * security = HTTPBearer()
+        * def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict: //? con depends(security) le decimos a fastapi que el endpoint requiere autenticacion
+          *  token = creds.credentials  * */
+    if (token && token !== 'null' && token !== 'undefined') { //! DEFINIMOS LA AUTENTICACION EN EL FRONTEND
+        headers = headers.append('Authorization', `Bearer ${token}`); //! 1 ENVIO AL BACKEND -> lo recibe aqui security = HTTPBearer()
+    }
+    
+    return { headers: headers }; // devolvemos el objeto
+  }
 
   public static divideEvenly(numerator, minPartSize) {
     if (numerator / minPartSize < 2) {
@@ -70,7 +82,8 @@ export class CommonService {
     });
   }
 
-   base64toPDF(data, id) {
+
+  base64toPDF(data, id) {
     const bufferArray = this.base64ToArrayBuffer(data);
     const blobStore = new Blob([bufferArray], { type: 'application/pdf' });
     if (window.navigator && window.navigator.msSaveOrOpenBlob) {
@@ -107,4 +120,13 @@ export class CommonService {
       return null;
     }
     }
+
+    get headers(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+  }
+
 }
