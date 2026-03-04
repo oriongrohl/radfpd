@@ -55,7 +55,7 @@ export class LoginComponent implements OnInit {
         if (RESPONSE.data.token) {
 
           //? login PHP
-          
+
           localStorage.setItem('token', RESPONSE.data.token);
           localStorage.setItem('usuario', RESPONSE.data.usuario);
           localStorage.setItem('nombre_publico', RESPONSE.data.nombre_publico);
@@ -72,6 +72,7 @@ export class LoginComponent implements OnInit {
 
             if (RESPONSE_PY?.access_token) { // si el endpoint devuelve el token lo guardamos en localstorage
 
+              //? ya se puede guardar en navegador pq el token se ha verificado ya
               localStorage.setItem('token_python', RESPONSE_PY.access_token); // localstorage = almacenamiento local del navegador | access_token es el nombre del token que devuelve python
               localStorage.setItem('usuario_python', data.username);
 

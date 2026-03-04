@@ -11,7 +11,7 @@ export class CommonService {
 
   
   //! headerspython es un getter que devuelve los headers con el token incluido para las peticiones al backend de python 
-  get headersPython() {
+  get headersPython() { // se llama en los componentes
     const token = localStorage.getItem('token_python'); //! buscamos el token en localstorage que se ha debido de almacenar en login.compontent.ts
     let headers = new HttpHeaders({ 
         'Content-Type': 'application/json' // aclaramos quue el contenido es un json para que el backend lo pueda interpretar correctamente

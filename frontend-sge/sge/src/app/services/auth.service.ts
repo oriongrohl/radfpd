@@ -18,20 +18,22 @@ export class AuthService {
     const body = JSON.stringify(data);
     return this.http.post<ApiResponse>(`${URL_API}/login.php`, body);
   }
-  
-  //! is authenticate dusa el auth guard
+
+  //! is authenticated se usa en el auth guard recordatorio!
   public async isAuthenticated(url: string): Promise<boolean> { 
 
-    // verificar si esta el token de python en el localstorage, si no esta, ni lo intentamos, no esta autenticado
+    // getter del token_python al almacenamiento local del navegador = localstorage
     const tokenPython = localStorage.getItem('token_python');
+
+    // verificar si esta el token de python en el localstorage, si no esta es que no esta autenticado asi que pasando haber espabilado
     if (!tokenPython) {
-        return false; // Si no hay token, ni lo intentamos, no está autenticado
+        return false;
     }
 
     // comprobamos si es una ruta python
     let ruta = url.substring(1).split('/')[0];
     if (ruta === 'alumnos' || ruta === 'vacantes' || ruta === 'asignaciones') {
-        return true; // ok pq el  token existe
+        return true; // si el token esta en localstorage y la ruta es de python el token es valido
     }
 
     // logica de las rutas php

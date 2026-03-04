@@ -13,9 +13,9 @@ export class AuthGuardService implements CanActivate {
 
   async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> {
 
-    const response = await this.auth.isAuthenticated(state.url);
+    const response = await this.auth.isAuthenticated(state.url); // llamada al metodo para ver si esta o no autenticado
 
-    if (!response) {
+    if (!response) { // !si la respuesta es false, es que no esta autenticado, asi que redirigimos al login
       this.router.navigate(['/home']);
     }
 
