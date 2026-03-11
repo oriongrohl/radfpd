@@ -77,4 +77,4 @@ class Usuario(Base):
     usuario = Column(String(100), unique=True, nullable=False)
     pass_user = Column(String(100), nullable=False)
     nombre_publico = Column(String(255))
-    habilitado = Column(Integer) # tinyint(1) se mapea como Integer o Boolean
+    habilitado = Column(Integer)

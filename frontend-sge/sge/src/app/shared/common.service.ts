@@ -13,7 +13,7 @@ export class CommonService {
   //! headerspython es un getter que devuelve los headers con el token incluido para las peticiones al backend de python 
   get headersPython() { // se llama en los componentes
     const token = localStorage.getItem('token_python'); //! buscamos el token en localstorage que se ha debido de almacenar en login.compontent.ts
-    let headers = new HttpHeaders({ 
+    let headers = new HttpHeaders({
         'Content-Type': 'application/json' // aclaramos quue el contenido es un json para que el backend lo pueda interpretar correctamente
     });
     
@@ -22,11 +22,12 @@ export class CommonService {
         * security = HTTPBearer()
         * def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict: //? con depends(security) le decimos a fastapi que el endpoint requiere autenticacion
           *  token = creds.credentials  * */
-    if (token && token !== 'null' && token !== 'undefined') { //! DEFINIMOS LA AUTENTICACION EN EL FRONTEND
-        headers = headers.append('Authorization', `Bearer ${token}`); //! 1 ENVIO AL BACKEND -> lo recibe aqui security = HTTPBearer()
+    if (token && token !== 'null' && token !== 'undefined') { // aseguramos q el token sea valido
+      headers = headers.append('Authorization', `Bearer ${token}`); //! 1 ENVIO AL BACKEND -> lo recibe aqui security = HTTPBearer()
+      return { headers: headers }; // devolvemos el objeto
     }
-    
-    return { headers: headers }; // devolvemos el objeto
+    // console.log("deberia redirigirse a login");
+    // return { headers: headers }; // devolvemos el objeto
   }
 
   public static divideEvenly(numerator, minPartSize) {

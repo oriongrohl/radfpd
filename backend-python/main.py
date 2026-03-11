@@ -46,52 +46,47 @@ class LoginRequest(BaseModel): # modelo de datos para la solicitud de login
     username: str
     password: str
 
-
-@app.post("/login") #! ruta de login que recibe un objeto con username y password, verifica las credenciales y devuelve un token JWT si son correctas. El token se puede usar para autenticar futuras peticiones a rutas protegidas.
-def login(user: LoginRequest, db: Session = Depends(get_db)):
-    # 1. Buscamos el usuario
-    db_user = db.query(models.Usuario).filter(models.Usuario.usuario == user.username).first() # !consulta a la tabla usuarios que devuelve el primer usuario que coincida con el nombre de usuario proporcionado en la solicitud. Si no se encuentra ningún usuario con ese nombre, db_user será None.
+@app.post("/login") # ruta de login que recibe un objeto con username y password, verifica las credenciales y devuelve un token JWT si son correctas. El token se puede usar para autenticar futuras peticiones a rutas protegidas.
+def login(user: LoginRequest, db: Session = Depends(get_db)): # ?data (angular) = user
+    #! 1 USUARIO
+    db_user = db.query(models.Usuario).filter(models.Usuario.usuario == user.username).first() # consulta a la tabla usuarios que devuelve el primer usuario que coincida con el nombre de usuario proporcionado en la solicitud. Si no se encuentra ningún usuario con ese nombre, db_user será None.
 
     if not db_user: # si es none salta error 401 no autorizado
-        raise HTTPException(status_code=401, detail="Usuario no encontrado en BDD")
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
     
-    # 2. comparar contraseña
+    #! 2 CONTRASEÑA
     # .strip() para eliminar espacios accidentales
     if str(db_user.pass_user).strip() != user.password.strip():
-        #! comparamos contraseña cifrando la que viene de Angular pq sino pasa algo como esto Victoria1928 = b9266f26d51e509ffc0ade6f28472843 (basado en experiencia personal)
+        # comparamos contraseña cifrando la que viene de Angular pq sino pasa algo como esto Victoria1928 = b9266f26d51e509ffc0ade6f28472843 (basado en experiencia personal)
         password_angular = user.password.strip()
-        password_cifrada = hashlib.md5(password_angular.encode()).hexdigest() #? hardcodear la contraseña de angular para comparar bien
+        password_cifrada = hashlib.md5(password_angular.encode()).hexdigest() # hardcodear la contraseña de angular para comparar bien
+        #? pista para saber cual es el cifrado que hace php: hash MD5 genera cadenas de 128 bits/ 32 caracteres
 
-        if str(db_user.pass_user).strip() != password_cifrada: #! si no son la misma salta 401
+        if str(db_user.pass_user).strip() != password_cifrada: # si no son la misma salta 401
             raise HTTPException(status_code=401, detail="Password incorrecto")
 
     token = crear_token({"sub": str(db_user.usuario)}) # se crea el token JWT con el nombre de usuario
 
     return {
         "ok": True,
-        "access_token": token, #! el termino access_token tiene que coincidir conn angular
+        "access_token": token, #! el termino access_token tiene que coincidir con angular
         "data": { # datos de la base de datos
             "token": token,
-            "access_token": token, # lo he puesto dos veces pq no me acuerdo de si el frontend lo espera en data o fuera 
             "usuario": db_user.usuario,
             "nombre_publico": db_user.nombre_publico or db_user.usuario, # si el nombre público no está definido, se muestra el nombre de usuario en su lugar
-            "opcion": "dashboard",
-            "grupo": "admin",
-            "accion": "dashboard"
         }
     }
 
-
-SECRET_KEY_raw = os.environ.get("SECRET_KEY") # !obtenemos la clave secreta de .env para firmar los tokens JWT
+#! EXTRACCION SECRET_KEY
+SECRET_KEY_raw = os.environ.get("SECRET_KEY") # obtenemos la clave secreta de .env para firmar los tokens JWT
 if SECRET_KEY_raw is None: # si no esta definida lanzamos un error
-    raise RuntimeError("SECRET_KEY environment variable is required") # esto evita un type: ignore 
-SECRET_KEY: str = SECRET_KEY_raw # ya hemos garantizaddo que sesa un string
+    raise RuntimeError("SECRET_KEY environment variable is required") # esto evita un type ignore 
+SECRET_KEY: str = SECRET_KEY_raw # Garantizaddo que sea un string
 
-ALGORITHM = "HS256" # algoritmo de cifrado para los tokens JWT es el mas comun y seguro para esta casuistica
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 # tiempo de expiracion del token en minutos
+ALGORITHM = "HS256" # algoritmo de cifrado para los tokens JWT es el mas comun y seguro para esta casuistica #? HMAC-SHA 256 limita a 256 bits = 32 caracteres la SECRET_KEY
 
 def crear_token(data: dict, expires_minutes: int = 60): # funcion crear token donde dict es la informacion del token
-    to_encode = data.copy() # hacemos una copia del diccionario para no modificar el original
+    to_encode = data.copy() # copia del dict para no modificar el original #? sub = username
     now = datetime.utcnow() # fecha y hora actual
     to_encode.update({ # agregamos a la información del token los campos estándar de JWT: iat (issued at), exp (expiration) y jti (JWT ID)
         "iat": now, # fecha de emisión del token
@@ -100,31 +95,33 @@ def crear_token(data: dict, expires_minutes: int = 60): # funcion crear token do
     })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) # codificacion del token con jwt que es la libreria que nos permite crear y verificar tokens JWT
 
-security = HTTPBearer()
+security = HTTPBearer() # extrae automagicamente la peticion http que empiece por Authorization: Bearer #? fastapi
 
-#!!!!!!! METODO verificar_token SE USA EN TODOS LOS ENDPOINTS protegidos para verificar que el token JWT sea y siga siendo válido antes de permitir hacer nada
-def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    token = creds.credentials #! obtenemos el token del header Authorization (el frontend lo envía automáticamente en cada petición después de hacer login)
+# METODO verificar_token SE USA EN TODOS LOS ENDPOINTS protegidos para verificar que el token JWT sea y siga siendo válido antes de permitir hacer nada
+@app.get("/verificar-token")
+def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict: # inyectar dependencia para extraer token de la cabecera
+    token = creds.credentials # saca de "Authorization: Bearer token" solo la parte token
+    # bearer viene de OAuth 2.0 estandar de token de acceso de internet
     try: 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # ?decodificamos el token con la misma clave secreta y algoritmo de creacion
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # decodificamos el token con la misma clave secreta y algoritmo de creacion
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado")
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
-    user = payload.get("sub") # !obtenemos el campo "sub" (sub es un estandar internaciona) del payload que es donde guardamos el nombre de usuario al crear el token
+    
+    user = payload.get("sub") # obtenemos sub=username del payload del token
     if not user: # si no hay campo sub es q el user no es valido
         raise HTTPException(status_code=401, detail="Token sin subject")
     return payload  # o devuelve user info: {"username": user, "roles": payload.get("roles")} 
 
-
 # auxiliares desplegables
 @app.get("/ciclos", response_model=List[schemas.Ciclo])
-def leer_ciclos_tecnologia(solo_tecnologia: bool = False, db: Session = Depends(get_db)):
+def leer_ciclos_tecnologia(solo_tecnologia: bool = False, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Solo devuelve ciclos con ID entre 1 y 9 (Tecnología)
     return db.query(models.Ciclo).filter(models.Ciclo.id_ciclo >= 1, models.Ciclo.id_ciclo <= 9).all()
 
-@app.get("/alumnos/libres", response_model=List[schemas.Alumno])
-def leer_alumnos_libres(db: Session = Depends(get_db)):
+@app.get("/alumnos-libres", response_model=List[schemas.Alumno])
+def leer_alumnos_libres(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     #? evitar asignaciones duplicadas
     ocupados = db.query(models.VacanteAlumno.id_alumno).subquery() #! OCUPADOS = alumnos cuyo id NO ESTÁ en Asignacion.id_alumno
     return db.query(models.Alumno).filter(models.Alumno.id_alumno.not_in(ocupados)).all() # type: ignore #! WHERE alumno.id NOT IN ocupados
@@ -133,7 +130,7 @@ def leer_alumnos_libres(db: Session = Depends(get_db)):
 # --- CRUD ALUMNOS ---
 
 @app.get("/alumnos", response_model=List[schemas.Alumno])
-def leer_alumnos(db: Session = Depends(get_db)):
+def leer_alumnos(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     db_alumnos = db.query(models.Alumno).all()
     for a in db_alumnos:
         if a.entidad:
@@ -195,7 +192,7 @@ def borrar_alumno(id_alumno: int, db: Session = Depends(get_db), token: str = De
 # --- CRUD VACANTES ---
 
 @app.get("/vacantes")
-def leer_vacantes(db: Session = Depends(get_db)):
+def leer_vacantes(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     vacantes = db.query(models.Vacante).all()
     res = []
     for v in vacantes:
@@ -205,7 +202,7 @@ def leer_vacantes(db: Session = Depends(get_db)):
         res.append({
             "id_vacante": v.id_vacante,
             "entidad_nombre": v.entidad.entidad if v.entidad else "",
-            "ciclo_nombre": v.ciclo.ciclo if v.ciclo else "",
+            "ciclo_nombre": v.ciclo.ciclo if v.ciclo else "", 
             "num_vacantes": v.num_vacantes,
             "num_alumnos": num_ocupados, #? se pasa esto a la variable de la BDD para que aparezca en el frontend en directo cada vez que se haga get vacantes
             "curso": v.curso,
@@ -215,7 +212,7 @@ def leer_vacantes(db: Session = Depends(get_db)):
     return res
 
 @app.get("/vacantes-disponibles")
-def leer_vacantes_disponibles(db: Session = Depends(get_db)):
+def leer_vacantes_disponibles(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     """Devuelve vacantes que aún tienen plazas libres"""
     todas = db.query(models.Vacante).all()
     disponibles = []
@@ -276,7 +273,7 @@ def borrar_vacante(id_vacante: int, db: Session = Depends(get_db), token: str = 
 # --- CRUD ASIGNACIONES (sgi_vacantes_x_alumnos) ---
 
 @app.get("/asignaciones")
-def leer_asignaciones(db: Session = Depends(get_db)): #! evita joins complejos
+def leer_asignaciones(db: Session = Depends(get_db), token: str = Depends(verificar_token)): #! evita joins complejos
     asigs = db.query(models.VacanteAlumno).all()
     return [{
         "id_vacante_x_alumno": a.id_vacante_x_alumno,
@@ -326,21 +323,21 @@ def borrar_asignacion(id_asig: int, db: Session = Depends(get_db), token: str = 
     return {"status": "ok"}
 
 @app.get("/entidades")
-def leer_entidades(db: Session = Depends(get_db)):
+def leer_entidades(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Devuelve todas las empresas para el desplegable de vacantes
     return db.query(models.Entidad).all()
 
 @app.get("/ciclos")
-def leer_ciclos_completo(db: Session = Depends(get_db)):
+def leer_ciclos_completo(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Devuelve todos los ciclos para el desplegable de vacantes
     return db.query(models.Ciclo).all()
 
 @app.get("/entidades-centros") #?para el desplegable de creacion y edicion alumknos
-def leer_centros_educativos(db: Session = Depends(get_db)):
+def leer_centros_educativos(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     return db.query(models.Entidad).filter(models.Entidad.id_tipo_entidad == 1).all() # muestra solo entidades que son centros educativos (id_tipo_entidad = 1)
 
 @app.get("/asignaciones/vacante/{id_vacante}")
-def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db)):
+def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     # Hacemos un JOIN entre VacanteAlumno y Alumno para obtener los nombres
     alumnos_asignados = (
         db.query(models.Alumno)

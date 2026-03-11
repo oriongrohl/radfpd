@@ -12,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';       // Para mat-se
 import { MatIconModule } from '@angular/material/icon';           // Para mat-icon
 import { MatButtonModule } from '@angular/material/button';       // Para mat-button
 import { MatPaginatorModule } from '@angular/material/paginator'; // Para el paginador
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [AlumnosComponent],
@@ -28,7 +29,8 @@ import { MatPaginatorModule } from '@angular/material/paginator'; // Para el pag
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatSnackBarModule
   ]
 })
 export class AlumnosModule { }

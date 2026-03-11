@@ -74,7 +74,7 @@ const routes: Routes = [
   { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule)},
   // { path: 'alumnos', loadChildren: () => import('./alumnos/alumnos.module').then(m => m.AlumnosModule) },
   { path: 'vacantes', loadChildren: () => import('./vacantes/vacantes.module').then(m => m.VacantesModule) },
-  { path: 'asignaciones', loadChildren: () => import('./asignaciones/asignaciones.module').then(m => m.AsignacionesModule) }, //! , canActivate: [AuthGuard]
+  { path: 'asignaciones', loadChildren: () => import('./asignaciones/asignaciones.module').then(m => m.AsignacionesModule), canActivate: [AuthGuard] }, //! , canActivate: [AuthGuard]
 
 //  { path: 'ciclos-entidad', loadChildren: () => import('./entidades/datos-entidad/ciclos-entidad/ciclos-entidad.module').then(m => m.CiclosEntidadModule) },
 //  { path: 'contactos-entidad', loadChildren: () => import('./entidades/datos-entidad/contactos-entidad/contactos-entidad.module').then(m => m.ContactosEntidadModule) },

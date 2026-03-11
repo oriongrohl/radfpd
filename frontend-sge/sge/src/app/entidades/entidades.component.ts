@@ -64,6 +64,7 @@ export class EntidadesComponent implements OnInit {
   private filterValues = { id_entidad: '', entidad: '',id_tipo_entidad: '', id_zona: '', id_contacto: '' };
 
   constructor(
+    
     public dialog: MatDialog,
     private entidadesService: EntidadesService,
     private servicioZona: ZonasService,
@@ -74,9 +75,6 @@ export class EntidadesComponent implements OnInit {
     private overlay: Overlay,
     private clipboard: Clipboard,
     private snackBar: MatSnackBar,
-
-    
-
 
   ) { }
 

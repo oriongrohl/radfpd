@@ -4,6 +4,9 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { AlumnosService } from '../services/alumnos.service';
+import { ActivatedRoute, Route } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-alumnos',
@@ -40,7 +43,11 @@ export class AlumnosComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     public dialog: MatDialog,
-    private alumnosService: AlumnosService
+    private alumnosService: AlumnosService,
+    private route: ActivatedRoute,
+    private snackBar: MatSnackBar,
+    private router: Router,
+
   ) {
     this.initForm();
   }
@@ -50,6 +57,14 @@ export class AlumnosComponent implements OnInit {
     this.cargarCiclos();
     this.setupFilters();
     this.cargarEntidades();
+    this.route.queryParams.subscribe(params => {
+        if (params['sesionExpira']) {
+            this.snackBar.open('Su sesión ha expirado o es inválida. Por favor, identifíquese de nuevo.', 'Cerrar', {
+                duration: 5000,
+                panelClass: ['warning-snackbar'] // Opcional: para ponerle color naranja/rojo en CSS
+            });
+        }
+    });
   }
 
   // --- CONFIGURACIÓN DE FILTROS ---
@@ -125,6 +140,16 @@ export class AlumnosComponent implements OnInit {
     this.dialog.open(this.alumnoDialog, { width: '600px' });
   }
 
+  private manejarExpulsion(err: any) {
+    if (err.status === 401) {
+      localStorage.removeItem('token_python');
+      // Redirigimos al login con el parámetro para que el LoginComponent muestre el aviso
+      this.router.navigate(['/login'], { queryParams: { sesionExpira: 'true' } });
+    } else {
+      alert("Error: " + (err.error?.detail || 'Error desconocido'));
+    }
+  }
+
   confirmSave() {
     if (this.alumnoForm.invalid) return;
 
@@ -149,7 +174,12 @@ export class AlumnosComponent implements OnInit {
 
   borrarAlumno(id: number) {
     if (confirm("¿Deseas eliminar el alumno?")) {
-      this.alumnosService.deleteAlumno(id).subscribe(() => this.cargarAlumnos());
+      this.alumnosService.deleteAlumno(id).subscribe({
+        next: () => {
+          this.cargarAlumnos();
+        },
+        error: (error) => alert("Error al eliminar")
+      })
     }
   }
 }

@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { CookieService } from 'ngx-cookie-service';
 import { AuthService } from 'src/app/services/auth.service';
-import { CommonService } from 'src/app/shared/common.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -27,11 +27,19 @@ export class LoginComponent implements OnInit {
               private router: Router,
               private cookieService: CookieService,
               private snackBar: MatSnackBar,
-              private commonService: CommonService
+              private route: ActivatedRoute
             ) { }
 
   ngOnInit() {
     this.setForm();
+    this.route.queryParams.subscribe(params => {
+        if (params['sesionExpira']) {
+            this.snackBar.open('Su sesión ha expirado o es inválida. Por favor, identifíquese de nuevo.', 'Cerrar', {
+                duration: 5000,
+                panelClass: ['warning-snackbar'] // Opcional: para ponerle color naranja/rojo en CSS
+            });
+        }
+    });
   }
 
   setForm() {
@@ -65,23 +73,23 @@ export class LoginComponent implements OnInit {
           //! login python a partir de aqui cambia el codigo antiguo
 
           try { // intentamos obtener el token de fastapi
-
             const RESPONSE_PY = await this.authService  // response_py es la respuesta del endpoint de fastapi, que nos devuelve el token de python
-              .doLoginPython(data) //! llamada al endpoint A TRAVES DEL LOGIN PYTHON
+              .doLoginPython(data) //? llamada al endpoint A TRAVES DEL LOGIN PYTHON
               .toPromise(); // convertimos el observable en una promesa para usar async que usamos en la cabecera del metodo acceder
 
-            if (RESPONSE_PY?.access_token) { // si el endpoint devuelve el token lo guardamos en localstorage
+            if (RESPONSE_PY?.access_token) { // si el endpoint devuelve el token lo guardamos en localstorage (? response_py no sea null ni undefined y exista el access token)
 
               //? ya se puede guardar en navegador pq el token se ha verificado ya
               localStorage.setItem('token_python', RESPONSE_PY.access_token); // localstorage = almacenamiento local del navegador | access_token es el nombre del token que devuelve python
               localStorage.setItem('usuario_python', data.username);
-
+              console.log("token válido login exitoso")
             } else {
-              console.error("No se recibió token de FastAPI");
+              console.error("No se recibió token de FastAPI"); //! el backend es binario así que en principio este error no sale
             }
 
-          } catch (error) {
+          } catch (error) { //! error 401
             console.error("Error obteniendo token FastAPI", error);
+            this.snackBar.open('Error de autenticación en el servidor de Python', 'Cerrar', {duration: 5000});
           }
 
           this.router.navigate([`/${RESPONSE.data.accion}`]); // redireccion a la pantalla de inicio (esto estaba ya antes, lo dejamos igual)

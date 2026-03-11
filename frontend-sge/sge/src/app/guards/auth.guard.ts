@@ -10,17 +10,10 @@ export class AuthGuardService implements CanActivate {
 
   constructor(public auth: AuthService, public router: Router) {}
 
-
-  async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> {
+  async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> { // el metodo canActivate se ejecuta cada vez que se intenta acceder a una ruta protegida, y recibe como parametros la ruta a la que se intenta acceder y el estado de la ruta
 
     const response = await this.auth.isAuthenticated(state.url); // llamada al metodo para ver si esta o no autenticado
-
-    if (!response) { // !si la respuesta es false, es que no esta autenticado, asi que redirigimos al login
-      this.router.navigate(['/home']);
-    }
-
     return response;
   }
 
 }
-
