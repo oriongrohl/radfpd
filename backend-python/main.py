@@ -113,7 +113,7 @@ def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security), db:
     db_user = db.query(models.Usuario).filter(models.Usuario.usuario == user).first()
     if not user: # si no hay campo sub es q el user no es valido
         raise HTTPException(status_code=401, detail="Token sin subject")
-    if user != db_user:
+    if not db_user:
         raise HTTPException(status_code=401, detail="El token no corresponde a este usuario")
     return payload  # o devuelve user info: {"username": user, "roles": payload.get("roles")} 
 

@@ -50,7 +50,7 @@ export class LoginComponent implements OnInit {
   }
 
 
-  async acceder() { //! usamos async para poder usar await dentro del metodo acceder, que es lo que se ejecuta al hacker click en login
+  async acceder() { // usamos async para poder usar await dentro del metodo acceder, que es lo que se ejecuta al hacker click en login
     // async = codigo asincrono, el codigo asincrono es aquel que no se ejecuta secuencialmente sino que puede esperar a que se resuelvan ciertas cosas y dp continuar
     if (this.loginForm.valid) { // quick check de que el formulario es valido
 
@@ -78,7 +78,6 @@ export class LoginComponent implements OnInit {
               .toPromise(); // convertimos el observable en una promesa para usar async que usamos en la cabecera del metodo acceder
 
             if (RESPONSE_PY?.access_token) { // si el endpoint devuelve el token lo guardamos en localstorage (? response_py no sea null ni undefined y exista el access token)
-
               //? ya se puede guardar en navegador pq el token se ha verificado ya
               localStorage.setItem('token_python', RESPONSE_PY.access_token); // localstorage = almacenamiento local del navegador | access_token es el nombre del token que devuelve python
               localStorage.setItem('usuario_python', data.username);
