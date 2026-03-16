@@ -56,14 +56,14 @@ def login(user: LoginRequest, db: Session = Depends(get_db)): # ?data (angular) 
     
     #! 2 CONTRASEÑA
     # .strip() para eliminar espacios accidentales
-    if str(db_user.pass_user).strip() != user.password.strip():
+    # if str(db_user.pass_user).strip() != user.password.strip():
         # comparamos contraseña cifrando la que viene de Angular pq sino pasa algo como esto Victoria1928 = b9266f26d51e509ffc0ade6f28472843 (basado en experiencia personal)
-        password_angular = user.password.strip()
-        password_cifrada = hashlib.md5(password_angular.encode()).hexdigest() # hardcodear la contraseña de angular para comparar bien
-        #? pista para saber cual es el cifrado que hace php: hash MD5 genera cadenas de 128 bits/ 32 caracteres
+    password_angular = user.password.strip()
+    password_cifrada = hashlib.md5(password_angular.encode()).hexdigest() # hardcodear la contraseña de angular para comparar bien
+    #? pista para saber cual es el cifrado que hace php: hash MD5 genera cadenas de 128 bits/ 32 caracteres
 
-        if str(db_user.pass_user).strip() != password_cifrada: # si no son la misma salta 401
-            raise HTTPException(status_code=401, detail="Password incorrecto")
+    if str(db_user.pass_user).strip() != password_cifrada: # si no son la misma salta 401
+        raise HTTPException(status_code=401, detail="Password incorrecto")
 
     token = crear_token({"sub": str(db_user.usuario)}) # se crea el token JWT con el nombre de usuario
 
@@ -99,7 +99,7 @@ security = HTTPBearer() # extrae automagicamente la peticion http que empiece po
 
 # METODO verificar_token SE USA EN TODOS LOS ENDPOINTS protegidos para verificar que el token JWT sea y siga siendo válido antes de permitir hacer nada
 @app.get("/verificar-token")
-def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict: # inyectar dependencia para extraer token de la cabecera
+def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> dict: # inyectar dependencia para extraer token de la cabecera
     token = creds.credentials # saca de "Authorization: Bearer token" solo la parte token
     # bearer viene de OAuth 2.0 estandar de token de acceso de internet
     try: 
@@ -110,8 +110,11 @@ def verificar_token(creds: HTTPAuthorizationCredentials = Depends(security)) -> 
         raise HTTPException(status_code=401, detail="Token inválido")
     
     user = payload.get("sub") # obtenemos sub=username del payload del token
+    db_user = db.query(models.Usuario).filter(models.Usuario.usuario == user).first()
     if not user: # si no hay campo sub es q el user no es valido
         raise HTTPException(status_code=401, detail="Token sin subject")
+    if user != db_user:
+        raise HTTPException(status_code=401, detail="El token no corresponde a este usuario")
     return payload  # o devuelve user info: {"username": user, "roles": payload.get("roles")} 
 
 # auxiliares desplegables
