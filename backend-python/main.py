@@ -23,6 +23,7 @@ from pydantic import BaseModel
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SGE - RAD FPD") #? Título de la API (http://localhost:8000/docs)
+load_dotenv()
 
 app.add_middleware(
     CORSMiddleware,
@@ -338,6 +339,100 @@ def leer_ciclos_completo(db: Session = Depends(get_db), token: str = Depends(ver
 @app.get("/entidades-centros") #?para el desplegable de creacion y edicion alumknos
 def leer_centros_educativos(db: Session = Depends(get_db), token: str = Depends(verificar_token)):
     return db.query(models.Entidad).filter(models.Entidad.id_tipo_entidad == 1).all() # muestra solo entidades que son centros educativos (id_tipo_entidad = 1)
+
+
+# --- CRUD USUARIOS (solo admins) ---
+
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> models.Usuario:
+    token = creds.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except (ExpiredSignatureError, JWTError):
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    user = db.query(models.Usuario).filter(models.Usuario.usuario == payload.get("sub")).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    return user
+
+def require_admin(current_user: models.Usuario = Depends(get_current_user)) -> models.Usuario:
+    if current_user.rol != 'admin':
+        raise HTTPException(status_code=403, detail="Se requiere rol de administrador")
+    return current_user
+
+@app.get("/usuarios", response_model=List[schemas.Usuario])
+def leer_usuarios(db: Session = Depends(get_db), _: models.Usuario = Depends(require_admin)):
+    return db.query(models.Usuario).all()
+
+@app.post("/usuarios", response_model=schemas.Usuario)
+def crear_usuario(datos: schemas.UsuarioCreate, db: Session = Depends(get_db), _: models.Usuario = Depends(require_admin)):
+    if db.query(models.Usuario).filter(models.Usuario.usuario == datos.usuario).first():
+        raise HTTPException(status_code=400, detail="El nombre de usuario ya existe")
+    password_cifrada = hashlib.md5(datos.pass_user.encode()).hexdigest()
+    nuevo = models.Usuario(
+        usuario=datos.usuario,
+        pass_user=password_cifrada,
+        nombre_publico=datos.nombre_publico,
+        habilitado=datos.habilitado,
+        rol=datos.rol
+    )
+    db.add(nuevo)
+    db.commit()
+    db.refresh(nuevo)
+    return nuevo
+
+@app.put("/usuarios/{id_usuario}", response_model=schemas.Usuario)
+def actualizar_usuario(id_usuario: int, datos: schemas.UsuarioUpdate, db: Session = Depends(get_db), _: models.Usuario = Depends(require_admin)):
+    u = db.query(models.Usuario).filter(models.Usuario.id_usuario == id_usuario).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    u.nombre_publico = datos.nombre_publico
+    u.habilitado = datos.habilitado
+    u.rol = datos.rol
+    db.commit()
+    db.refresh(u)
+    return u
+
+@app.delete("/usuarios/{id_usuario}")
+def borrar_usuario(id_usuario: int, db: Session = Depends(get_db), current: models.Usuario = Depends(require_admin)):
+    if current.id_usuario == id_usuario:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propio usuario")
+    u = db.query(models.Usuario).filter(models.Usuario.id_usuario == id_usuario).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    db.delete(u)
+    db.commit()
+    return {"status": "ok"}
+
+
+# --- FAVORITAS ---
+
+@app.get("/favoritas")
+def list_favorita(db: Session = Depends(get_db), current_user: models.Usuario = Depends(get_current_user)):
+    favs = db.query(models.Favorita).filter(models.Favorita.id_usuario == current_user.id_usuario).all()
+    return [f.id_movie for f in favs]
+
+@app.post("/favoritas")
+def add_favorita(datos: schemas.FavoritaCreate, db: Session = Depends(get_db), current_user: models.Usuario = Depends(get_current_user)) -> bool:
+    existente = db.query(models.Favorita).filter(
+        models.Favorita.id_usuario == current_user.id_usuario,
+        models.Favorita.id_movie == datos.id_movie
+    ).first()
+    if existente:
+        return True
+    nueva = models.Favorita(id_usuario=current_user.id_usuario, id_movie=datos.id_movie)
+    db.add(nueva)
+    db.commit()
+    return True
+
+@app.delete("/favoritas/{id_movie}")
+def del_favorita(id_movie: int, db: Session = Depends(get_db), current_user: models.Usuario = Depends(get_current_user)) -> bool:
+    db.query(models.Favorita).filter(
+        models.Favorita.id_usuario == current_user.id_usuario,
+        models.Favorita.id_movie == id_movie
+    ).delete()
+    db.commit()
+    return True
+
 
 @app.get("/asignaciones/vacante/{id_vacante}")
 def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):

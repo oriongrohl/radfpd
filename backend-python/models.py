@@ -78,3 +78,18 @@ class Usuario(Base):
     pass_user = Column(String(100), nullable=False)
     nombre_publico = Column(String(255))
     habilitado = Column(Integer)
+    rol = Column(String(20), default='user', nullable=True)
+
+    favoritas = relationship("Favorita", back_populates="usuario", cascade="all, delete-orphan")
+
+
+class Favorita(Base):
+    __tablename__ = "movies_favoritas"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_usuario = Column(Integer, ForeignKey("sgi_usuarios.id_usuario"), nullable=False)
+    id_movie = Column(Integer, nullable=False)
+
+    __table_args__ = (UniqueConstraint('id_usuario', 'id_movie', name='_usuario_movie_uc'),)
+
+    usuario = relationship("Usuario", back_populates="favoritas")

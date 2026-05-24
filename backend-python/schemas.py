@@ -85,3 +85,34 @@ class VacanteAlumno(VacanteAlumnoBase):
 class AsignacionCreate(BaseModel):
     id_vacante: int
     id_alumno: int
+
+
+# --- USUARIOS ---
+class UsuarioBase(BaseModel):
+    usuario: str
+    nombre_publico: Optional[str] = None
+    habilitado: int = 1
+    rol: str = 'user'
+
+class UsuarioCreate(UsuarioBase):
+    pass_user: str
+
+class UsuarioUpdate(BaseModel):
+    nombre_publico: Optional[str] = None
+    habilitado: int
+    rol: str
+
+class Usuario(UsuarioBase):
+    id_usuario: int
+    class Config: from_attributes = True
+
+
+# --- FAVORITAS ---
+class FavoritaCreate(BaseModel):
+    id_movie: int
+
+class Favorita(BaseModel):
+    id: int
+    id_usuario: int
+    id_movie: int
+    class Config: from_attributes = True
