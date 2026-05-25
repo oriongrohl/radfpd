@@ -367,7 +367,7 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(security), db
     return user
 
 def require_admin(current_user: models.Usuario = Depends(get_current_user)) -> models.Usuario:
-    if current_user.rol != 'admin':
+    if current_user.rol != 'admin':                                                                     # type: ignore
         raise HTTPException(status_code=403, detail="Se requiere rol de administrador")
     return current_user
 
@@ -397,16 +397,16 @@ def actualizar_usuario(id_usuario: int, datos: schemas.UsuarioUpdate, db: Sessio
     u = db.query(models.Usuario).filter(models.Usuario.id_usuario == id_usuario).first()
     if not u:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    u.nombre_publico = datos.nombre_publico
-    u.habilitado = datos.habilitado
-    u.rol = datos.rol
+    u.nombre_publico = datos.nombre_publico # type: ignore
+    u.habilitado = datos.habilitado # type: ignore
+    u.rol = datos.rol # type: ignore
     db.commit()
     db.refresh(u)
     return u
 
 @app.delete("/usuarios/{id_usuario}")
 def borrar_usuario(id_usuario: int, db: Session = Depends(get_db), current: models.Usuario = Depends(require_admin)):
-    if current.id_usuario == id_usuario:
+    if current.id_usuario == id_usuario: # type: ignore
         raise HTTPException(status_code=400, detail="No puedes eliminar tu propio usuario")
     u = db.query(models.Usuario).filter(models.Usuario.id_usuario == id_usuario).first()
     if not u:
