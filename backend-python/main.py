@@ -47,6 +47,17 @@ class LoginRequest(BaseModel): # modelo de datos para la solicitud de login
     username: str
     password: str
 
+class UsernameRequest(BaseModel):
+    username: str
+
+@app.post("/verificar-usuario")
+def verificar_usuario(data: UsernameRequest, db: Session = Depends(get_db)):
+    user = db.query(models.Usuario).filter(models.Usuario.usuario == data.username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return { "ok": True, "nombre_publico": user.nombre_publico or user.usuario }
+
+
 @app.post("/login") # ruta de login que recibe un objeto con username y password, verifica las credenciales y devuelve un token JWT si son correctas. El token se puede usar para autenticar futuras peticiones a rutas protegidas.
 def login(user: LoginRequest, db: Session = Depends(get_db)): # ?data (angular) = user
     #! 1 USUARIO
@@ -74,7 +85,8 @@ def login(user: LoginRequest, db: Session = Depends(get_db)): # ?data (angular) 
         "data": { # datos de la base de datos
             "token": token,
             "usuario": db_user.usuario,
-            "nombre_publico": db_user.nombre_publico or db_user.usuario, # si el nombre público no está definido, se muestra el nombre de usuario en su lugar
+            "nombre_publico": db_user.nombre_publico or db_user.usuario,
+            "rol": db_user.rol or "user",
         }
     }
 
@@ -432,7 +444,6 @@ def del_favorita(id_movie: int, db: Session = Depends(get_db), current_user: mod
     ).delete()
     db.commit()
     return True
-
 
 @app.get("/asignaciones/vacante/{id_vacante}")
 def leer_alumnos_por_vacante(id_vacante: int, db: Session = Depends(get_db), token: str = Depends(verificar_token)):
